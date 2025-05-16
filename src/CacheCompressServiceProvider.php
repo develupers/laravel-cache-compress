@@ -83,7 +83,7 @@ class CacheCompressServiceProvider extends PackageServiceProvider
          * More info: https://github.com/spatie/laravel-package-tools
          */
         $package
-            ->name('laravel-cache-compress')
+            ->name('cache-compress')
             ->hasConfigFile()
             ->hasCommand(CacheCompressCommand::class);
     }
