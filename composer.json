@@ -2,7 +2,7 @@
     "name": "develupers/laravel-cache-compress",
     "description": "Add compression support to your Laravel cache. (MongoDB, Redis, Memcached and MySQL supported)",
     "type": "library",
-    "version": "1.0.0",
+    "version": "0.1.0",
     "keywords": [
         "develupers",
         "laravel",
@@ -19,6 +19,8 @@
     ],
     "require": {
         "php": "^8.2",
+        "ext-curl": "*",
+        "ext-zlib": "*",
         "spatie/laravel-package-tools": "^1.16",
         "illuminate/contracts": "^10.0||^11.0||^12.0"
     },

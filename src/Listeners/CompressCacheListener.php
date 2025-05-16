@@ -4,6 +4,7 @@ namespace Develupers\CacheCompress\Listeners;
 
 use Develupers\CacheCompress\CompressCache;
 use Illuminate\Cache\Events\KeyWritten;
+use Illuminate\Support\Facades\Cache;
 
 class CompressCacheListener
 {
@@ -30,13 +31,10 @@ class CompressCacheListener
      */
     public function handle(KeyWritten $event)
     {
-        $store = app('cache')->store($event->storeName);
-        $driver = method_exists($store->getStore(), 'getDriver')
-            ? $store->getStore()->getDriver()
-            : $event->storeName;
+        $driver = Cache::getFacadeRoot()->store($event->storeName)->getConfig()['driver'];
         $compressed = $this->compressor->compress($event->value, $driver);
         
         // Update the value with the compressed version
         $event->value = $compressed;
     }
-} 
+}
