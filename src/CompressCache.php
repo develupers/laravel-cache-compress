@@ -17,7 +17,6 @@ class CompressCache implements CacheCompressorInterface
     /**
      * Set temporary compression settings.
      *
-     * @param array|null $settings
      * @return void
      */
     public static function setTemporarySettings(?array $settings)
@@ -27,8 +26,6 @@ class CompressCache implements CacheCompressorInterface
 
     /**
      * Get the current compression settings.
-     *
-     * @return array
      */
     protected function getSettings(): array
     {
@@ -38,22 +35,20 @@ class CompressCache implements CacheCompressorInterface
 
         return [
             'enabled' => Config::get('cache-compress.enabled', true),
-            'level' => Config::get('cache-compress.compression_level', 6)
+            'level' => Config::get('cache-compress.compression_level', 6),
         ];
     }
 
     /**
      * Compress the given value for cache storage
      *
-     * @param mixed $value
-     * @param string $driver
-     * @return string
+     * @param  mixed  $value
      */
     public function compress($value, string $driver): string
     {
         $settings = $this->getSettings();
 
-        if (!$settings['enabled']) {
+        if (! $settings['enabled']) {
             return serialize($value);
         }
 
@@ -73,15 +68,13 @@ class CompressCache implements CacheCompressorInterface
     /**
      * Decompress the given value from cache storage
      *
-     * @param string $value
-     * @param string $driver
      * @return mixed
      */
     public function decompress(string $value, string $driver)
     {
         $settings = $this->getSettings();
 
-        if (!$settings['enabled']) {
+        if (! $settings['enabled']) {
             return unserialize($value);
         }
 

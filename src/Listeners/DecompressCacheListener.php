@@ -15,8 +15,6 @@ class DecompressCacheListener
 
     /**
      * Create the event listener.
-     *
-     * @param CompressCache $compressor
      */
     public function __construct(CompressCache $compressor)
     {
@@ -25,9 +23,6 @@ class DecompressCacheListener
 
     /**
      * Handle the event.
-     *
-     * @param CacheHit $event
-     * @return void
      */
     public function handle(CacheHit $event): void
     {

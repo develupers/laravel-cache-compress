@@ -25,4 +25,4 @@ return [
     |
     */
     'compression_level' => env('CACHE_COMPRESS_LEVEL', 6),
-]; 
+];

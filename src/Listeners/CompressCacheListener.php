@@ -15,8 +15,6 @@ class CompressCacheListener
 
     /**
      * Create the event listener.
-     *
-     * @param CompressCache $compressor
      */
     public function __construct(CompressCache $compressor)
     {
@@ -26,14 +24,13 @@ class CompressCacheListener
     /**
      * Handle the event.
      *
-     * @param KeyWritten $event
      * @return void
      */
     public function handle(KeyWritten $event)
     {
         $driver = Cache::getFacadeRoot()->store($event->storeName)->getConfig()['driver'];
         $compressed = $this->compressor->compress($event->value, $driver);
-        
+
         // Update the value with the compressed version
         $event->value = $compressed;
     }

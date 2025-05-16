@@ -2,8 +2,6 @@
 
 namespace Develupers\CacheCompress;
 
-use Spatie\LaravelPackageTools\Package;
-use Spatie\LaravelPackageTools\PackageServiceProvider;
 use Develupers\CacheCompress\Commands\CacheCompressCommand;
 use Develupers\CacheCompress\Listeners\CompressCacheListener;
 use Develupers\CacheCompress\Listeners\DecompressCacheListener;
@@ -12,6 +10,8 @@ use Illuminate\Cache\Events\CacheHit;
 use Illuminate\Cache\Events\KeyWritten;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
+use Spatie\LaravelPackageTools\Package;
+use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 class CompressCacheServiceProvider extends PackageServiceProvider
 {
@@ -46,20 +46,22 @@ class CompressCacheServiceProvider extends PackageServiceProvider
         Cache::macro('compress', function (bool $enabled = true, ?int $level = null) {
             $this->compressionSettings = [
                 'enabled' => $enabled,
-                'level' => $level ?? config('cache-compress.compression_level', 6)
+                'level' => $level ?? config('cache-compress.compression_level', 6),
             ];
+
             return $this;
         });
 
         Cache::macro('compressionLevel', function (int $level) {
-            if (!isset($this->compressionSettings)) {
+            if (! isset($this->compressionSettings)) {
                 $this->compressionSettings = [
                     'enabled' => config('cache-compress.enabled', true),
-                    'level' => $level
+                    'level' => $level,
                 ];
             } else {
                 $this->compressionSettings['level'] = $level;
             }
+
             return $this;
         });
 
