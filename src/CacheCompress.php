@@ -5,7 +5,7 @@ namespace Develupers\CacheCompress;
 use Develupers\CacheCompress\Contracts\CacheCompressorInterface;
 use Illuminate\Support\Facades\Config;
 
-class CompressCache implements CacheCompressorInterface
+class CacheCompress implements CacheCompressorInterface
 {
     /**
      * The temporary compression settings.

@@ -2,21 +2,21 @@
 
 namespace Develupers\CacheCompress\Listeners;
 
-use Develupers\CacheCompress\CompressCache;
+use Develupers\CacheCompress\CacheCompress;
 use Illuminate\Cache\Events\CacheHit;
 use Illuminate\Support\Facades\Cache;
 
 class DecompressCacheListener
 {
     /**
-     * @var CompressCache
+     * @var CacheCompress
      */
     protected $compressor;
 
     /**
      * Create the event listener.
      */
-    public function __construct(CompressCache $compressor)
+    public function __construct(CacheCompress $compressor)
     {
         $this->compressor = $compressor;
     }

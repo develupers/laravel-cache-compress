@@ -2,19 +2,19 @@
 
 namespace Develupers\CacheCompress\Tests;
 
-use Develupers\CacheCompress\CompressCache;
+use Develupers\CacheCompress\CacheCompress;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Orchestra\Testbench\TestCase;
 
 class CompressCacheTest extends TestCase
 {
-    protected CompressCache $compressor;
+    protected CacheCompress $compressor;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->compressor = new CompressCache;
+        $this->compressor = new CacheCompress;
 
         // Set up test cache configurations
         Config::set('cache.stores', [
@@ -96,18 +96,18 @@ class CompressCacheTest extends TestCase
         $originalData = ['test' => 'data'];
 
         // Test with temporary settings disabled
-        CompressCache::setTemporarySettings(['enabled' => false, 'level' => 6]);
+        CacheCompress::setTemporarySettings(['enabled' => false, 'level' => 6]);
         $compressed = $this->compressor->compress($originalData, 'redis');
         $this->assertEquals(serialize($originalData), $compressed);
 
         // Test with temporary settings enabled and custom level
-        CompressCache::setTemporarySettings(['enabled' => true, 'level' => 9]);
+        CacheCompress::setTemporarySettings(['enabled' => true, 'level' => 9]);
         $compressed = $this->compressor->compress($originalData, 'redis');
         $decompressed = $this->compressor->decompress($compressed, 'redis');
         $this->assertEquals($originalData, $decompressed);
 
         // Clear temporary settings
-        CompressCache::setTemporarySettings(null);
+        CacheCompress::setTemporarySettings(null);
     }
 
     /** @test */
@@ -116,18 +116,18 @@ class CompressCacheTest extends TestCase
         $originalData = str_repeat('test data', 1000);
 
         // Test with level 1 (minimal compression)
-        CompressCache::setTemporarySettings(['enabled' => true, 'level' => 1]);
+        CacheCompress::setTemporarySettings(['enabled' => true, 'level' => 1]);
         $compressed1 = $this->compressor->compress($originalData, 'redis');
 
         // Test with level 9 (maximum compression)
-        CompressCache::setTemporarySettings(['enabled' => true, 'level' => 9]);
+        CacheCompress::setTemporarySettings(['enabled' => true, 'level' => 9]);
         $compressed9 = $this->compressor->compress($originalData, 'redis');
 
         // Level 9 should result in smaller output than level 1
         $this->assertLessThan(strlen($compressed1), strlen($compressed9));
 
         // Clear temporary settings
-        CompressCache::setTemporarySettings(null);
+        CacheCompress::setTemporarySettings(null);
     }
 
     /** @test */

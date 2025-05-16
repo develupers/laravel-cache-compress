@@ -2,7 +2,7 @@
 
 namespace Develupers\CacheCompress\Tests;
 
-use Develupers\CacheCompress\CompressCacheServiceProvider;
+use Develupers\CacheCompress\CacheCompressServiceProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Orchestra\Testbench\TestCase as Orchestra;
 
@@ -13,14 +13,14 @@ class TestCase extends Orchestra
         parent::setUp();
 
         Factory::guessFactoryNamesUsing(
-            fn (string $modelName) => 'VendorName\\CompressCache\\Database\\Factories\\'.class_basename($modelName).'Factory'
+            fn (string $modelName) => 'Develupers\\CacheCompress\\Database\\Factories\\'.class_basename($modelName).'Factory'
         );
     }
 
     protected function getPackageProviders($app)
     {
         return [
-            CompressCacheServiceProvider::class,
+            CacheCompressServiceProvider::class,
         ];
     }
 

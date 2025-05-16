@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Config;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
-class CompressCacheServiceProvider extends PackageServiceProvider
+class CacheCompressServiceProvider extends PackageServiceProvider
 {
     use HasCompression;
 
@@ -22,7 +22,7 @@ class CompressCacheServiceProvider extends PackageServiceProvider
      */
     public function register(): void
     {
-        $this->app->singleton(CompressCache::class);
+        $this->app->singleton(CacheCompress::class);
     }
 
     /**
@@ -83,8 +83,8 @@ class CompressCacheServiceProvider extends PackageServiceProvider
          * More info: https://github.com/spatie/laravel-package-tools
          */
         $package
-            ->name('cache-compress')
-            ->hasConfigFile()
+            ->name('laravel-cache-compress')
+            ->hasConfigFile('cache-compress')
             ->hasCommand(CacheCompressCommand::class);
     }
 }
