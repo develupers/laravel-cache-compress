@@ -3,8 +3,8 @@
 namespace Develupers\CacheCompress\Tests;
 
 use Develupers\CacheCompress\CompressCache;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Config;
 use Orchestra\Testbench\TestCase;
 
 class CompressCacheTest extends TestCase
@@ -14,7 +14,7 @@ class CompressCacheTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->compressor = new CompressCache();
+        $this->compressor = new CompressCache;
 
         // Set up test cache configurations
         Config::set('cache.stores', [
