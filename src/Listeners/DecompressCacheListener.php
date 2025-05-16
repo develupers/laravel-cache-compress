@@ -4,6 +4,7 @@ namespace Develupers\CacheCompress\Listeners;
 
 use Develupers\CacheCompress\CompressCache;
 use Illuminate\Cache\Events\CacheHit;
+use Illuminate\Support\Facades\Cache;
 
 class DecompressCacheListener
 {
@@ -28,15 +29,12 @@ class DecompressCacheListener
      * @param CacheHit $event
      * @return void
      */
-    public function handle(CacheHit $event)
+    public function handle(CacheHit $event): void
     {
-        $store = app('cache')->store($event->storeName);
-        $driver = method_exists($store->getStore(), 'getDriver')
-            ? $store->getStore()->getDriver()
-            : $event->storeName;
+        $driver = Cache::getFacadeRoot()->store($event->storeName)->getConfig()['driver'];
         $decompressed = $this->compressor->decompress($event->value, $driver);
-        
+
         // Update the value with the decompressed version
         $event->value = $decompressed;
     }
-} 
+}
