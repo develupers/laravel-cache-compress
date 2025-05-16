@@ -22,7 +22,7 @@ The package will automatically register itself.
 You can publish the config file with:
 
 ```bash
-php artisan vendor:publish --tag="cache-compress-config"
+php artisan vendor:publish --tag="laravel-cache-compress-config"
 ```
 
 This will create a `config/cache-compress.php` file in your app that you can modify to set your configuration. Also, make sure that you have the following in your `.env` file:
