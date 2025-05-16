@@ -2,7 +2,6 @@
     "name": "develupers/laravel-cache-compress",
     "description": "Add compression support to your Laravel cache. (MongoDB, Redis, Memcached and MySQL supported)",
     "type": "library",
-    "version": "0.1.4",
     "keywords": [
         "develupers",
         "laravel",
@@ -66,7 +65,7 @@
     "extra": {
         "laravel": {
             "providers": [
-                "CompressCacheServiceProvider"
+                "Develupers\\CacheCompress\\CompressCacheServiceProvider"
             ],
             "aliases": {
                 "CacheCompress": "Develupers\\CacheCompress\\Facades\\CacheCompress"
