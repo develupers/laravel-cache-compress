@@ -64,7 +64,7 @@
     "extra": {
         "laravel": {
             "providers": [
-                "Develupers\\CacheCompress\\CompressCacheServiceProvider"
+                "Develupers\\CacheCompress\\CacheCompressServiceProvider"
             ],
             "aliases": {
                 "CacheCompress": "Develupers\\CacheCompress\\Facades\\CacheCompress"
