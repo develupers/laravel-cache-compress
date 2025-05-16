@@ -2,9 +2,9 @@
 
 namespace Develupers\CacheCompress\Tests;
 
+use Develupers\CacheCompress\CompressCacheServiceProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Orchestra\Testbench\TestCase as Orchestra;
-use Develupers\CacheCompress\CompressCacheServiceProvider;
 
 class TestCase extends Orchestra
 {

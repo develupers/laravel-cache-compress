@@ -17,12 +17,11 @@ class CacheCompressed
     /**
      * Create a new event instance.
      *
-     * @param mixed $value
-     * @param string $driver
+     * @param  mixed  $value
      */
     public function __construct($value, string $driver)
     {
         $this->value = $value;
         $this->driver = $driver;
     }
-} 
+}

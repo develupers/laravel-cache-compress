@@ -21,4 +21,4 @@ class CacheCompress extends Facade
     {
         return 'cache-compress';
     }
-} 
+}
