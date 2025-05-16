@@ -4,7 +4,8 @@ namespace Develupers\CacheCompress\Tests;
 
 use Develupers\CacheCompress\CompressCache;
 use Illuminate\Support\Facades\Config;
-use PHPUnit\Framework\TestCase;
+use Illuminate\Support\Facades\Cache;
+use Orchestra\Testbench\TestCase;
 
 class CompressCacheTest extends TestCase
 {
@@ -14,6 +15,18 @@ class CompressCacheTest extends TestCase
     {
         parent::setUp();
         $this->compressor = new CompressCache();
+
+        // Set up test cache configurations
+        Config::set('cache.stores', [
+            'redis' => [
+                'driver' => 'redis',
+                'connection' => 'cache',
+            ],
+            'file' => [
+                'driver' => 'file',
+                'path' => storage_path('framework/cache/data'),
+            ],
+        ]);
     }
 
     /** @test */
@@ -118,13 +131,27 @@ class CompressCacheTest extends TestCase
     }
 
     /** @test */
-    public function it_resolves_correct_cache_driver()
+    public function it_resolves_correct_cache_driver(): void
     {
-        $storeName = 'redis';
-        $store = app('cache')->store($storeName);
-        $driver = method_exists($store->getStore(), 'getDriver')
-            ? $store->getStore()->getDriver()
-            : $storeName;
-        $this->assertEquals('redis', $driver);
+        // Test Redis driver
+        $redisDriver = Cache::getFacadeRoot()->store('redis')->getConfig()['driver'];
+        $this->assertEquals('redis', $redisDriver);
+
+        // Test File driver
+        $fileDriver = Cache::getFacadeRoot()->store('file')->getConfig()['driver'];
+        $this->assertEquals('file', $fileDriver);
+
+        // Test compression works with a resolved driver
+        $originalData = ['test' => 'data'];
+
+        // Test with Redis
+        $compressedRedis = $this->compressor->compress($originalData, $redisDriver);
+        $decompressedRedis = $this->compressor->decompress($compressedRedis, $redisDriver);
+        $this->assertEquals($originalData, $decompressedRedis);
+
+        // Test with File
+        $compressedFile = $this->compressor->compress($originalData, $fileDriver);
+        $decompressedFile = $this->compressor->decompress($compressedFile, $fileDriver);
+        $this->assertEquals($originalData, $decompressedFile);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Develupers\CacheCompress\Facades;
 
+use Develupers\CacheCompress\CompressCache;
 use Illuminate\Support\Facades\Facade;
 
 /**
@@ -11,6 +12,6 @@ class Skeleton extends Facade
 {
     protected static function getFacadeAccessor(): string
     {
-        return \Develupers\CacheCompress\CompressCache::class;
+        return CompressCache::class;
     }
 }
