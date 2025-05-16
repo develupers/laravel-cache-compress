@@ -1,68 +1,108 @@
-# :package_description
+# Laravel Cache Compress
 
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/:vendor_slug/:package_slug.svg?style=flat-square)](https://packagist.org/packages/:vendor_slug/:package_slug)
-[![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/:vendor_slug/:package_slug/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/:vendor_slug/:package_slug/actions?query=workflow%3Arun-tests+branch%3Amain)
-[![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/:vendor_slug/:package_slug/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/:vendor_slug/:package_slug/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
-[![Total Downloads](https://img.shields.io/packagist/dt/:vendor_slug/:package_slug.svg?style=flat-square)](https://packagist.org/packages/:vendor_slug/:package_slug)
-<!--delete-->
----
-This repo can be used to scaffold a Laravel package. Follow these steps to get started:
+A Laravel package that adds compression support to Laravel's cache functionality. This package automatically compresses cache data before storage and decompresses it when retrieved, helping to reduce memory usage and improve performance.
 
-1. Press the "Use this template" button at the top of this repo to create a new repo with the contents of this skeleton.
-2. Run "php ./configure.php" to run a script that will replace all placeholders throughout all the files.
-3. Have fun creating your package.
-4. If you need help creating a package, consider picking up our <a href="https://laravelpackage.training">Laravel Package Training</a> video course.
----
-<!--/delete-->
-This is where your description should go. Limit it to a paragraph or two. Consider adding a small example.
+## Requirements
 
-## Support us
-
-[<img src="https://github-ads.s3.eu-central-1.amazonaws.com/:package_name.jpg?t=1" width="419px" />](https://spatie.be/github-ad-click/:package_name)
-
-We invest a lot of resources into creating [best in class open source packages](https://spatie.be/open-source). You can support us by [buying one of our paid products](https://spatie.be/open-source/support-us).
-
-We highly appreciate you sending us a postcard from your hometown, mentioning which of our package(s) you are using. You'll find our address on [our contact page](https://spatie.be/about-us). We publish all received postcards on [our virtual postcard wall](https://spatie.be/open-source/postcards).
+- PHP 8.2+
+- Laravel 11+
 
 ## Installation
 
 You can install the package via composer:
 
 ```bash
-composer require :vendor_slug/:package_slug
+composer require develupers/laravel-cache-compress
 ```
 
-You can publish and run the migrations with:
+The package will automatically register itself.
 
-```bash
-php artisan vendor:publish --tag=":package_slug-migrations"
-php artisan migrate
-```
+## Configuration
 
 You can publish the config file with:
 
 ```bash
-php artisan vendor:publish --tag=":package_slug-config"
+php artisan vendor:publish --tag="cache-compress-config"
 ```
 
-This is the contents of the published config file:
+This will create a `config/cache-compress.php` file in your app that you can modify to set your configuration. Also, make sure that you have the following in your `.env` file:
 
-```php
-return [
-];
+```env
+CACHE_COMPRESS_ENABLED=true
+CACHE_COMPRESS_LEVEL=6
 ```
 
-Optionally, you can publish the views using
+### Configuration Options
 
-```bash
-php artisan vendor:publish --tag=":package_slug-views"
-```
+- `enabled` (default: `true`): Enable or disable cache compression
+- `compression_level` (default: `6`): Set the compression level (0-9)
+  - 0 = no compression
+  - 1 = minimal compression (fastest)
+  - 9 = maximum compression (slowest)
 
 ## Usage
 
+The package works automatically with Laravel's cache system. No additional configuration is needed. It will automatically compress data when storing in cache and decompress it when retrieving.
+
+### Basic Usage
+
 ```php
-$variable = new VendorName\Skeleton();
-echo $variable->echoPhrase('Hello, VendorName!');
+use Illuminate\Support\Facades\Cache;
+
+// Store data in cache (will be automatically compressed)
+Cache::put('key', 'value', 600); // 10 minutes
+
+// Retrieve data from cache (will be automatically decompressed)
+$value = Cache::get('key');
+```
+
+### Inline Compression Control
+
+You can control compression settings for individual cache operations:
+
+```php
+use Illuminate\Support\Facades\Cache;
+
+// Disable compression for this operation
+$value = Cache::compress(false)->get('key');
+
+// Enable compression with default level
+$value = Cache::compress(true)->get('key');
+
+// Enable compression with custom level
+$value = Cache::compress(true, 9)->get('key');
+
+// Disable compression for storing
+Cache::compress(false)->put('key', 'value', 600);
+
+// Chain with other cache methods
+$value = Cache::store('redis')
+    ->compress(true, 9)
+    ->remember('key', 600, function () {
+        return 'value';
+    });
+```
+
+### Supported Cache Drivers
+
+The package supports the following cache drivers:
+- Redis
+- MongoDB
+- Memcached
+- File
+
+### Manual Compression/Decompression
+
+If you need to manually compress or decompress data, you can use the facade:
+
+```php
+use Develupers\CacheCompress\Facades\CacheCompress;
+
+// Compress data
+$compressed = CacheCompress::compress($data, 'redis');
+
+// Decompress data
+$decompressed = CacheCompress::decompress($compressed, 'redis');
 ```
 
 ## Testing
@@ -70,23 +110,6 @@ echo $variable->echoPhrase('Hello, VendorName!');
 ```bash
 composer test
 ```
-
-## Changelog
-
-Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.
-
-## Contributing
-
-Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
-
-## Security Vulnerabilities
-
-Please review [our security policy](../../security/policy) on how to report security vulnerabilities.
-
-## Credits
-
-- [:author_name](https://github.com/:author_username)
-- [All Contributors](../../contributors)
 
 ## License
 

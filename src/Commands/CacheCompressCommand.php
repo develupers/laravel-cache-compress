@@ -1,10 +1,10 @@
 <?php
 
-namespace VendorName\Skeleton\Commands;
+namespace Develupers\CacheCompress\Commands;
 
 use Illuminate\Console\Command;
 
-class SkeletonCommand extends Command
+class CacheCompressCommand extends Command
 {
     public $signature = 'skeleton';
 
