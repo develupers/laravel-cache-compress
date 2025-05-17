@@ -6,7 +6,6 @@ use Develupers\CacheCompress\Commands\CacheCompressCommand;
 use Develupers\CacheCompress\Store\CustomCacheManager;
 use Develupers\CacheCompress\Store\CustomCacheRepository;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Config;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -40,19 +39,21 @@ class CacheCompressServiceProvider extends PackageServiceProvider
                 $this->setCompressionSetting('enabled', $enabled);
                 $this->setCompressionSetting('level', $level ?? config('cache-compress.compression_level', 6));
             }
+
             return $this;
         });
 
         Cache::macro('compressionLevel', function (int $level) {
             if ($this instanceof CustomCacheRepository) {
                 $this->setCompressionSetting('level', $level);
-                if (!isset($this->compressionSettings) || !array_key_exists('enabled', $this->compressionSettings)) {
+                if (! isset($this->compressionSettings) || ! array_key_exists('enabled', $this->compressionSettings)) {
                     $this->setCompressionSetting('enabled', config('cache-compress.enabled', true));
                 }
             }
+
             return $this;
         });
-        
+
         // The getCompressionSettings and clearCompressionSettings macros might need adjustment
         // if CustomCacheRepository doesn't directly expose compressionSettings.
         // For now, assuming it will have a way to get/clear these or we'll adjust later.
@@ -60,6 +61,7 @@ class CacheCompressServiceProvider extends PackageServiceProvider
             if ($this instanceof CustomCacheRepository) {
                 return $this->getCompressionSettingsForMacro();
             }
+
             return null;
         });
 
@@ -67,9 +69,10 @@ class CacheCompressServiceProvider extends PackageServiceProvider
             if ($this instanceof CustomCacheRepository) {
                 $this->clearCompressionSettingsForMacro();
             }
+
             return $this;
         });
-        
+
         // Call parent boot method if it exists and is necessary for PackageServiceProvider
         parent::boot();
     }
