@@ -3,11 +3,8 @@
 namespace Develupers\CacheCompress;
 
 use Develupers\CacheCompress\Commands\CacheCompressCommand;
-use Develupers\CacheCompress\Listeners\CompressCacheListener;
-use Develupers\CacheCompress\Listeners\DecompressCacheListener;
-use Develupers\CacheCompress\Traits\HasCompression;
-use Illuminate\Cache\Events\CacheHit;
-use Illuminate\Cache\Events\KeyWritten;
+use Develupers\CacheCompress\Store\CustomCacheManager;
+use Develupers\CacheCompress\Store\CustomCacheRepository;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Spatie\LaravelPackageTools\Package;
@@ -15,14 +12,21 @@ use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 class CacheCompressServiceProvider extends PackageServiceProvider
 {
-    use HasCompression;
-
     /**
      * Register services.
      */
     public function register(): void
     {
         $this->app->singleton(CacheCompress::class);
+
+        // Bind our custom cache manager
+        $this->app->singleton('cache', function ($app) {
+            return new CustomCacheManager($app);
+        });
+
+        $this->app->singleton('cache.store', function ($app) {
+            return $app['cache']->driver();
+        });
     }
 
     /**
@@ -30,49 +34,44 @@ class CacheCompressServiceProvider extends PackageServiceProvider
      */
     public function boot(): void
     {
-        if (Config::get('cache-compress.enabled', true)) {
-            $this->app['events']->listen(
-                KeyWritten::class,
-                CompressCacheListener::class
-            );
-
-            $this->app['events']->listen(
-                CacheHit::class,
-                DecompressCacheListener::class
-            );
-        }
-
-        // Register the compression macro
+        // Register the compression macro - These will target CustomCacheRepository
         Cache::macro('compress', function (bool $enabled = true, ?int $level = null) {
-            $this->compressionSettings = [
-                'enabled' => $enabled,
-                'level' => $level ?? config('cache-compress.compression_level', 6),
-            ];
-
+            if ($this instanceof CustomCacheRepository) {
+                $this->setCompressionSetting('enabled', $enabled);
+                $this->setCompressionSetting('level', $level ?? config('cache-compress.compression_level', 6));
+            }
             return $this;
         });
 
         Cache::macro('compressionLevel', function (int $level) {
-            if (! isset($this->compressionSettings)) {
-                $this->compressionSettings = [
-                    'enabled' => config('cache-compress.enabled', true),
-                    'level' => $level,
-                ];
-            } else {
-                $this->compressionSettings['level'] = $level;
+            if ($this instanceof CustomCacheRepository) {
+                $this->setCompressionSetting('level', $level);
+                if (!isset($this->compressionSettings) || !array_key_exists('enabled', $this->compressionSettings)) {
+                    $this->setCompressionSetting('enabled', config('cache-compress.enabled', true));
+                }
             }
-
             return $this;
         });
-
-        // Add a hook to set temporary settings before cache operations
+        
+        // The getCompressionSettings and clearCompressionSettings macros might need adjustment
+        // if CustomCacheRepository doesn't directly expose compressionSettings.
+        // For now, assuming it will have a way to get/clear these or we'll adjust later.
         Cache::macro('getCompressionSettings', function () {
-            return $this->compressionSettings ?? null;
+            if ($this instanceof CustomCacheRepository) {
+                return $this->getCompressionSettingsForMacro();
+            }
+            return null;
         });
 
         Cache::macro('clearCompressionSettings', function () {
-            $this->compressionSettings = null;
+            if ($this instanceof CustomCacheRepository) {
+                $this->clearCompressionSettingsForMacro();
+            }
+            return $this;
         });
+        
+        // Call parent boot method if it exists and is necessary for PackageServiceProvider
+        parent::boot();
     }
 
     public function configurePackage(Package $package): void
