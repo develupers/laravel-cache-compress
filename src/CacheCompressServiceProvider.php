@@ -70,8 +70,13 @@ class CacheCompressServiceProvider extends PackageServiceProvider
             return $this;
         });
         
-        // Call parent boot method if it exists and is necessary for PackageServiceProvider
-        parent::boot();
+        // Defer parent::boot() until the application is fully booted
+        $this->app->booted(function () {
+            // Check if parent has a boot method, just in case of future refactors of Spatie's package
+            if (method_exists(get_parent_class($this), 'boot')) {
+                 parent::boot();
+            }
+        });
     }
 
     public function configurePackage(Package $package): void
