@@ -6,7 +6,6 @@ use Develupers\CacheCompress\Commands\CacheCompressCommand;
 use Develupers\CacheCompress\Store\CustomCacheManager;
 use Develupers\CacheCompress\Store\CustomCacheRepository;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Config;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -40,16 +39,18 @@ class CacheCompressServiceProvider extends PackageServiceProvider
                 $this->setCompressionSetting('enabled', $enabled);
                 $this->setCompressionSetting('level', $level ?? config('cache-compress.compression_level', 6));
             }
+
             return $this;
         });
 
         Cache::macro('compressionLevel', function (int $level) {
             if ($this instanceof CustomCacheRepository) {
                 $this->setCompressionSetting('level', $level);
-                if (!isset($this->compressionSettings) || !array_key_exists('enabled', $this->compressionSettings)) {
+                if (! isset($this->compressionSettings) || ! array_key_exists('enabled', $this->compressionSettings)) {
                     $this->setCompressionSetting('enabled', config('cache-compress.enabled', true));
                 }
             }
+
             return $this;
         });
 
@@ -60,6 +61,7 @@ class CacheCompressServiceProvider extends PackageServiceProvider
             if ($this instanceof CustomCacheRepository) {
                 return $this->getCompressionSettingsForMacro();
             }
+
             return null;
         });
 
@@ -67,6 +69,7 @@ class CacheCompressServiceProvider extends PackageServiceProvider
             if ($this instanceof CustomCacheRepository) {
                 $this->clearCompressionSettingsForMacro();
             }
+
             return $this;
         });
 
@@ -74,7 +77,7 @@ class CacheCompressServiceProvider extends PackageServiceProvider
         $this->app->booted(function () {
             // Check if parent has a boot method, just in case of future refactors of Spatie's package
             if (method_exists(get_parent_class($this), 'boot')) {
-                 parent::boot();
+                parent::boot();
             }
         });
     }
