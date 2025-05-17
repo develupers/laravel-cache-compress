@@ -26,7 +26,8 @@ class DecompressCacheListener
      */
     public function handle(CacheHit $event): void
     {
-        $driver = Cache::getFacadeRoot()->store($event->storeName)->getConfig()['driver'];
+        // Get the driver name from the cache configuration
+        $driver = config("cache.stores.{$event->storeName}.driver", $event->storeName);
         $decompressed = $this->compressor->decompress($event->value, $driver);
 
         // Update the value with the decompressed version
