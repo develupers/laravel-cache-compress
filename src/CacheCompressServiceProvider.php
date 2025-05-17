@@ -52,7 +52,7 @@ class CacheCompressServiceProvider extends PackageServiceProvider
             }
             return $this;
         });
-        
+
         // The getCompressionSettings and clearCompressionSettings macros might need adjustment
         // if CustomCacheRepository doesn't directly expose compressionSettings.
         // For now, assuming it will have a way to get/clear these or we'll adjust later.
@@ -69,7 +69,7 @@ class CacheCompressServiceProvider extends PackageServiceProvider
             }
             return $this;
         });
-        
+
         // Defer parent::boot() until the application is fully booted
         $this->app->booted(function () {
             // Check if parent has a boot method, just in case of future refactors of Spatie's package

@@ -15,21 +15,18 @@ class CustomCacheRepository extends Repository
 {
     /**
      * The underlying cache store instance.
+     *
      * @var \Illuminate\Contracts\Cache\Store
      */
     // Already defined in parent as protected $store;
 
     /**
      * The CacheCompress instance for compression/decompression.
-     *
-     * @var \Develupers\CacheCompress\CacheCompress
      */
     protected CacheCompress $compressor;
 
     /**
      * The name of the cache driver (e.g., 'redis', 'file', 'mongodb').
-     *
-     * @var string
      */
     protected string $driverName;
 
@@ -43,9 +40,6 @@ class CustomCacheRepository extends Repository
     /**
      * Create a new cache repository instance.
      *
-     * @param  \Illuminate\Contracts\Cache\Store  $store
-     * @param  \Develupers\CacheCompress\CacheCompress  $compressor
-     * @param  string  $driverName
      * @return void
      */
     public function __construct(StoreContract $store, CacheCompress $compressor, string $driverName)
@@ -75,6 +69,7 @@ class CustomCacheRepository extends Repository
         // After getting settings for current operation, clear them for the next call
         // This makes the macro settings truly per-call
         $this->clearCompressionSettingsForMacro();
+
         return $settings;
     }
 
@@ -84,7 +79,7 @@ class CustomCacheRepository extends Repository
         if ($this->compressionSettings === null) {
             $this->compressionSettings = [
                 'enabled' => Config::get('cache-compress.enabled', true), // Default enable status
-                'level' => Config::get('cache-compress.compression_level', 6) // Default level
+                'level' => Config::get('cache-compress.compression_level', 6), // Default level
             ];
         }
         $this->compressionSettings[$key] = $value;
@@ -117,13 +112,17 @@ class CustomCacheRepository extends Repository
             CacheCompress::setTemporarySettings(null); // Reset for next independent operation
             $this->clearCompressionSettingsForMacro(); // Reset macro-specific settings for this repository instance
         }
+
         return $result;
     }
 
     protected function getMinutes($duration) // Helper from parent, make it accessible if needed
     {
-        if ($duration === null) return null;
+        if ($duration === null) {
+            return null;
+        }
         $seconds = $this->getSeconds($duration);
+
         return $seconds === 0 ? 0 : (int) ceil($seconds / 60);
     }
 
@@ -131,7 +130,7 @@ class CustomCacheRepository extends Repository
      * Retrieve an item from the cache by key.
      *
      * @param  string|array  $key
-     * @param  mixed   $default
+     * @param  mixed  $default
      * @return mixed
      */
     public function get($key, $default = null)
@@ -141,17 +140,19 @@ class CustomCacheRepository extends Repository
 
             if (is_null($value)) {
                 $this->event(new CacheMissed($key, []));
+
                 return $default instanceof Closure ? $default() : $default;
             }
 
             // If value is not a string, it's unlikely to be compressed or serialized by us
-            if (!is_string($value)) {
-                $this->event(new CacheHit($key, $value, [])); 
+            if (! is_string($value)) {
+                $this->event(new CacheHit($key, $value, []));
+
                 return $value;
             }
 
             $data = null;
-            if (!$config['enabled']) {
+            if (! $config['enabled']) {
                 try {
                     $data = unserialize($value);
                 } catch (\Throwable $e) {
@@ -169,7 +170,8 @@ class CustomCacheRepository extends Repository
                     }
                 }
             }
-            $this->event(new CacheHit($key, $data, [])); 
+            $this->event(new CacheHit($key, $data, []));
+
             return $data;
         }, true);
     }
@@ -178,26 +180,26 @@ class CustomCacheRepository extends Repository
      * Store an item in the cache.
      *
      * @param  string  $key
-     * @param  mixed   $value
+     * @param  mixed  $value
      * @param  \DateTimeInterface|\DateInterval|int|null  $ttl
-     * @return bool
      */
     public function put($key, $value, $ttl = null): bool
     {
         return $this->executeWithCompressionConfiguration(function ($config) use ($key, $value, $ttl) {
             $serializedValue = serialize($value);
-            if (!$config['enabled']) {
+            if (! $config['enabled']) {
                 $processedValue = $serializedValue;
             } else {
                 $processedValue = $this->compressor->compress($value, $this->driverName); // Compressor uses temp settings for level
             }
-            
+
             $result = $this->store->put($this->itemKey($key), $processedValue, $this->getSeconds($ttl));
             if ($result) {
                 // Event should ideally get the original value, but KeyWritten takes the stored value.
                 // For now, pass what was written, as per typical KeyWritten usage.
-                $this->event(new KeyWritten($key, $processedValue, $this->getMinutes($ttl), [])); 
+                $this->event(new KeyWritten($key, $processedValue, $this->getMinutes($ttl), []));
             }
+
             return $result;
         });
     }
@@ -206,15 +208,14 @@ class CustomCacheRepository extends Repository
      * Store an item in the cache if the key does not exist.
      *
      * @param  string  $key
-     * @param  mixed   $value
+     * @param  mixed  $value
      * @param  \DateTimeInterface|\DateInterval|int|null  $ttl
-     * @return bool
      */
     public function add($key, $value, $ttl = null): bool
     {
         return $this->executeWithCompressionConfiguration(function ($config) use ($key, $value, $ttl) {
             $serializedValue = serialize($value);
-            if (!$config['enabled']) {
+            if (! $config['enabled']) {
                 $processedValue = $serializedValue;
             } else {
                 $processedValue = $this->compressor->compress($value, $this->driverName);
@@ -224,6 +225,7 @@ class CustomCacheRepository extends Repository
             if ($result) {
                 $this->event(new KeyWritten($key, $processedValue, $this->getMinutes($ttl), []));
             }
+
             return $result;
         });
     }
@@ -232,13 +234,12 @@ class CustomCacheRepository extends Repository
      * Store an item in the cache indefinitely.
      *
      * @param  string  $key
-     * @param  mixed   $value
-     * @return bool
+     * @param  mixed  $value
      */
     public function forever($key, $value): bool
     {
         return $this->executeWithCompressionConfiguration(function ($config) use ($key, $value) {
-            if (!$config['enabled']) {
+            if (! $config['enabled']) {
                 $processedValue = serialize($value);
             } else {
                 $processedValue = $this->compressor->compress($value, $this->driverName);
@@ -247,6 +248,7 @@ class CustomCacheRepository extends Repository
             if ($result) {
                 $this->event(new KeyWritten($key, $processedValue, null, []));
             }
+
             return $result;
         });
     }
@@ -256,17 +258,17 @@ class CustomCacheRepository extends Repository
      *
      * @param  string  $key
      * @param  \DateTimeInterface|\DateInterval|int|null  $ttl
-     * @param  \Closure  $callback
      * @return mixed
      */
     public function remember($key, $ttl, Closure $callback)
     {
         $value = $this->get($key); // Uses our overridden get
-        if (!is_null($value)) {
+        if (! is_null($value)) {
             return $value;
         }
         $result = $callback();
         $this->put($key, $result, $ttl); // Uses our overridden put
+
         return $result;
     }
 
@@ -274,17 +276,17 @@ class CustomCacheRepository extends Repository
      * Get an item from the cache, or execute the given Closure and store the result forever.
      *
      * @param  string  $key
-     * @param  \Closure  $callback
      * @return mixed
      */
     public function rememberForever($key, Closure $callback)
     {
         $value = $this->get($key); // Uses our overridden get
-        if (!is_null($value)) {
+        if (! is_null($value)) {
             return $value;
         }
         $result = $callback();
         $this->forever($key, $result); // Uses our overridden forever
+
         return $result;
     }
 
@@ -292,9 +294,6 @@ class CustomCacheRepository extends Repository
      * Retrieve multiple items from the cache by key.
      *
      * Items not found in the cache will have a null value.
-     *
-     * @param  array  $keys
-     * @return array
      */
     public function many(array $keys): array
     {
@@ -310,28 +309,39 @@ class CustomCacheRepository extends Repository
                 if (is_null($value)) {
                     $this->event(new CacheMissed($key, []));
                     $results[$key] = null;
+
                     continue;
                 }
-                
-                if(!is_string($value)){
+
+                if (! is_string($value)) {
                     $this->event(new CacheHit($key, $value, []));
                     $results[$key] = $value;
+
                     continue;
                 }
 
                 $data = null;
-                if (!$config['enabled']) {
-                    try { $data = unserialize($value); } catch (\Throwable $e) { $data = $value; }
+                if (! $config['enabled']) {
+                    try {
+                        $data = unserialize($value);
+                    } catch (\Throwable $e) {
+                        $data = $value;
+                    }
                 } else {
                     try {
                         $data = $this->compressor->decompress($value, $this->driverName);
                     } catch (\Throwable $e) {
-                        try { $data = unserialize($value); } catch (\Throwable $e2) { $data = $value; }
+                        try {
+                            $data = unserialize($value);
+                        } catch (\Throwable $e2) {
+                            $data = $value;
+                        }
                     }
                 }
                 $this->event(new CacheHit($key, $data, []));
                 $results[$key] = $data;
             }
+
             return $results;
         }, true);
     }
@@ -339,9 +349,7 @@ class CustomCacheRepository extends Repository
     /**
      * Store multiple items in the cache for a given number of seconds.
      *
-     * @param  array  $values
      * @param  \DateTimeInterface|\DateInterval|int|null  $ttl
-     * @return bool
      */
     public function putMany(array $values, $ttl = null): bool
     {
@@ -350,7 +358,7 @@ class CustomCacheRepository extends Repository
             $eventValues = []; // For firing events with correct key
 
             foreach ($values as $key => $value) {
-                if (!$config['enabled']) {
+                if (! $config['enabled']) {
                     $processed = serialize($value);
                 } else {
                     $processed = $this->compressor->compress($value, $this->driverName);
@@ -365,13 +373,14 @@ class CustomCacheRepository extends Repository
                     $this->event(new KeyWritten($key, $processedValue, $this->getMinutes($ttl), []));
                 }
             }
+
             return $result;
         });
     }
-    
-    public function pull($key, $default = null) 
+
+    public function pull($key, $default = null)
     {
         // Relies on our get() and forget() (forget is inherited and should be fine)
         return parent::pull($key, $default);
     }
-} 
+}

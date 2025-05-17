@@ -4,17 +4,14 @@ namespace Develupers\CacheCompress\Store;
 
 use Develupers\CacheCompress\CacheCompress;
 use Illuminate\Cache\CacheManager;
-use Illuminate\Contracts\Cache\Store as StoreContract;
 use Illuminate\Cache\Repository as IlluminateRepository;
+use Illuminate\Contracts\Cache\Store as StoreContract;
 use Illuminate\Support\Str;
 
 class CustomCacheManager extends CacheManager
 {
     /**
      * Create a new cache repository with the given implementation.
-     *
-     * @param  \Illuminate\Contracts\Cache\Store  $store
-     * @return \Illuminate\Cache\Repository
      */
     protected function repository(StoreContract $store): IlluminateRepository
     {
@@ -35,9 +32,6 @@ class CustomCacheManager extends CacheManager
 
     /**
      * Determine the driver name from the store instance.
-     *
-     * @param StoreContract $store
-     * @return string
      */
     protected function determineDriverName(StoreContract $store): string
     {
@@ -59,7 +53,7 @@ class CustomCacheManager extends CacheManager
         if ($store instanceof \Illuminate\Cache\DynamoDbStore) {
             return 'dynamodb';
         }
-        
+
         // Check for Laravel MongoDB cache store (mongodb/laravel-mongodb package)
         $mongoStoreClass = 'MongoDB\Laravel\Cache\MongoStore';
         if (class_exists($mongoStoreClass) && $store instanceof $mongoStoreClass) {
@@ -93,17 +87,17 @@ class CustomCacheManager extends CacheManager
         $name = $name ?: $this->getDefaultDriver();
         $storeInstance = $this->resolve($name); // This will call our overridden createXDriver methods or parent's resolve
 
-        // Instead of calling repository() directly here without the driver name, 
+        // Instead of calling repository() directly here without the driver name,
         // we need to ensure our CustomCacheRepository gets the correct driver name.
         // The `resolve` method or `createXDriver` methods are better places to instantiate CustomCacheRepository
         // with the correct driver name from the $name parameter or its config.
-        
+
         // The parent's store() method eventually calls 'repository' with the driver instance.
         // We need to make sure that when 'repository' is called, it has access to the driver *name*.
 
         // Let's override createDrive instead to ensure we pass the driver name.
         return parent::store($name); // This will eventually call our overridden 'repository' method
-                                  // if we correctly intercept the store creation process.
+        // if we correctly intercept the store creation process.
     }
 
     /**
@@ -122,15 +116,15 @@ class CustomCacheManager extends CacheManager
         $actualDriver = $config['driver'] ?? $driverName; // Fallback to driverName if 'driver' key isn't in the specific store's config
 
         $repository = new CustomCacheRepository(
-            $store, 
-            $this->app->make(CacheCompress::class), 
+            $store,
+            $this->app->make(CacheCompress::class),
             $actualDriver // Pass the actual driver string
         );
 
         if ($this->app->bound('events')) {
             $repository->setEventDispatcher($this->app['events']);
         }
-        
+
         return $repository;
     }
-} 
+}
