@@ -16,6 +16,8 @@ class CacheCompressServiceProvider extends PackageServiceProvider
      */
     public function register(): void
     {
+        parent::register();
+
         $this->app->singleton(CacheCompress::class);
 
         // Bind our custom cache manager
@@ -75,9 +77,8 @@ class CacheCompressServiceProvider extends PackageServiceProvider
 
         // Defer parent::boot() until the application is fully booted
         $this->app->booted(function () {
-            // Check if parent has a boot method, just in case of future refactors of Spatie's package
             if (method_exists(get_parent_class($this), 'boot')) {
-                parent::boot();
+                 parent::boot();
             }
         });
     }
