@@ -78,7 +78,7 @@ class CacheCompressServiceProvider extends PackageServiceProvider
         // Defer parent::boot() until the application is fully booted
         $this->app->booted(function () {
             if (method_exists(get_parent_class($this), 'boot')) {
-                 parent::boot();
+                parent::boot();
             }
         });
     }
