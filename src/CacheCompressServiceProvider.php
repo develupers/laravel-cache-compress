@@ -5,10 +5,10 @@ namespace Develupers\CacheCompress;
 use Develupers\CacheCompress\Commands\CacheCompressCommand;
 use Develupers\CacheCompress\Store\CustomCacheManager;
 use Develupers\CacheCompress\Store\CustomCacheRepository;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Cache;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
-use Illuminate\Contracts\Foundation\Application;
 
 class CacheCompressServiceProvider extends PackageServiceProvider
 {
@@ -68,8 +68,10 @@ class CacheCompressServiceProvider extends PackageServiceProvider
                     $defaultStore->setCompressionSetting('enabled', $enabled);
                     $defaultStore->setCompressionSetting('level', $level ?? config('cache-compress.compression_level', 6));
                 }
+
                 return $defaultStore; // Return the store for chaining
             }
+
             return $this; // Return $this for chaining if not handled above
         });
 
@@ -87,8 +89,10 @@ class CacheCompressServiceProvider extends PackageServiceProvider
                         $defaultStore->setCompressionSetting('enabled', config('cache-compress.enabled', true));
                     }
                 }
+
                 return $defaultStore; // Return the store for chaining
             }
+
             return $this;
         });
 
@@ -101,6 +105,7 @@ class CacheCompressServiceProvider extends PackageServiceProvider
                     return $defaultStore->getCompressionSettingsForMacro();
                 }
             }
+
             return null;
         });
 
@@ -113,8 +118,8 @@ class CacheCompressServiceProvider extends PackageServiceProvider
                     $defaultStore->clearCompressionSettingsForMacro();
                 }
             }
+
             return $this;
         });
     }
-
 }
