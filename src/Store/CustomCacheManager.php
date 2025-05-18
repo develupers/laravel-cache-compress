@@ -4,7 +4,6 @@ namespace Develupers\CacheCompress\Store;
 
 use Develupers\CacheCompress\CacheCompress;
 use Illuminate\Cache\CacheManager;
-use Illuminate\Cache\Repository as IlluminateRepository;
 use Illuminate\Contracts\Cache\Store as StoreContract;
 use Illuminate\Support\Str;
 
@@ -13,8 +12,6 @@ class CustomCacheManager extends CacheManager
     /**
      * Create a new cache repository with the given implementation.
      *
-     * @param  \Illuminate\Contracts\Cache\Store  $store
-     * @param  array  $config
      * @return \Illuminate\Cache\Repository
      */
     public function repository(StoreContract $store, array $config = [])
@@ -30,8 +27,8 @@ class CustomCacheManager extends CacheManager
         if ($this->app->bound('events')) {
             $repository->setEventDispatcher($this->app['events']);
         }
-        
-        $storeName = $config['name'] ?? $driverName; 
+
+        $storeName = $config['name'] ?? $driverName;
         if (method_exists($repository, 'setStoreName')) {
             $repository->setStoreName($storeName);
         }

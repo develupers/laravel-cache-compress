@@ -34,7 +34,7 @@ class CacheCompressServiceProvider extends PackageServiceProvider
 
         $this->app->singleton('cache.store', function ($app) {
             // dd('\'cache.store\' singleton is being resolved, $app[cache] is: ' . get_class($app['cache']));
-            return $app['cache']->driver(); 
+            return $app['cache']->driver();
         });
     }
 
