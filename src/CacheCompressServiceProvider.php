@@ -16,17 +16,25 @@ class CacheCompressServiceProvider extends PackageServiceProvider
      */
     public function register(): void
     {
-        parent::register();
+        // dd('CacheCompressServiceProvider register() called'); // Commented out now
+        parent::register(); // Call parent's register method first
 
         $this->app->singleton(CacheCompress::class);
 
-        // Bind our custom cache manager
-        $this->app->singleton('cache', function ($app) {
+        // 1. Register our manager under a unique key
+        $this->app->singleton('cache.compress_manager', function ($app) {
+            // dd('cache.compress_manager singleton is being resolved'); // Comment this out
             return new CustomCacheManager($app);
         });
 
+        // 2. Alias the main 'cache' service to our custom manager.
+        $this->app->alias('cache.compress_manager', 'cache');
+        $this->app->alias('cache.compress_manager', \Illuminate\Cache\CacheManager::class);
+        $this->app->alias('cache.compress_manager', \Illuminate\Contracts\Cache\Factory::class);
+
         $this->app->singleton('cache.store', function ($app) {
-            return $app['cache']->driver();
+            // dd('\'cache.store\' singleton is being resolved, $app[cache] is: ' . get_class($app['cache']));
+            return $app['cache']->driver(); 
         });
     }
 

@@ -133,7 +133,7 @@ class CustomCacheRepository extends Repository
      * @param  mixed  $default
      * @return mixed
      */
-    public function get($key, $default = null)
+    public function get($key, $default = null): mixed
     {
         return $this->executeWithCompressionConfiguration(function ($config) use ($key, $default) {
             $value = $this->store->get($this->itemKey($key));
@@ -186,11 +186,13 @@ class CustomCacheRepository extends Repository
     public function put($key, $value, $ttl = null): bool
     {
         return $this->executeWithCompressionConfiguration(function ($config) use ($key, $value, $ttl) {
+            dd($config);
+
             $serializedValue = serialize($value);
             if (! $config['enabled']) {
                 $processedValue = $serializedValue;
             } else {
-                $processedValue = $this->compressor->compress($value, $this->driverName); // Compressor uses temp settings for level
+                $processedValue = $this->compressor->compress($value, $this->driverName);
             }
 
             $result = $this->store->put($this->itemKey($key), $processedValue, $this->getSeconds($ttl));
@@ -258,16 +260,17 @@ class CustomCacheRepository extends Repository
      *
      * @param  string  $key
      * @param  \DateTimeInterface|\DateInterval|int|null  $ttl
+     * @param  \Closure  $callback
      * @return mixed
      */
-    public function remember($key, $ttl, Closure $callback)
+    public function remember($key, $ttl, Closure $callback): mixed
     {
-        $value = $this->get($key); // Uses our overridden get
+        $value = $this->get($key);
         if (! is_null($value)) {
             return $value;
         }
         $result = $callback();
-        $this->put($key, $result, $ttl); // Uses our overridden put
+        $this->put($key, $result, $ttl);
 
         return $result;
     }
@@ -276,16 +279,17 @@ class CustomCacheRepository extends Repository
      * Get an item from the cache, or execute the given Closure and store the result forever.
      *
      * @param  string  $key
+     * @param  \Closure  $callback
      * @return mixed
      */
-    public function rememberForever($key, Closure $callback)
+    public function rememberForever($key, Closure $callback): mixed
     {
-        $value = $this->get($key); // Uses our overridden get
+        $value = $this->get($key);
         if (! is_null($value)) {
             return $value;
         }
         $result = $callback();
-        $this->forever($key, $result); // Uses our overridden forever
+        $this->forever($key, $result);
 
         return $result;
     }
@@ -378,9 +382,15 @@ class CustomCacheRepository extends Repository
         });
     }
 
-    public function pull($key, $default = null)
+    /**
+     * Retrieve an item from the cache and delete it.
+     *
+     * @param  string  $key
+     * @param  mixed  $default
+     * @return mixed
+     */
+    public function pull($key, $default = null): mixed
     {
-        // Relies on our get() and forget() (forget is inherited and should be fine)
         return parent::pull($key, $default);
     }
 }
