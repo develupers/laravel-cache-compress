@@ -131,7 +131,6 @@ class CustomCacheRepository extends Repository
      *
      * @param  string|array  $key
      * @param  mixed  $default
-     * @return mixed
      */
     public function get($key, $default = null): mixed
     {
@@ -260,8 +259,6 @@ class CustomCacheRepository extends Repository
      *
      * @param  string  $key
      * @param  \DateTimeInterface|\DateInterval|int|null  $ttl
-     * @param  \Closure  $callback
-     * @return mixed
      */
     public function remember($key, $ttl, Closure $callback): mixed
     {
@@ -279,8 +276,6 @@ class CustomCacheRepository extends Repository
      * Get an item from the cache, or execute the given Closure and store the result forever.
      *
      * @param  string  $key
-     * @param  \Closure  $callback
-     * @return mixed
      */
     public function rememberForever($key, Closure $callback): mixed
     {
@@ -387,7 +382,6 @@ class CustomCacheRepository extends Repository
      *
      * @param  string  $key
      * @param  mixed  $default
-     * @return mixed
      */
     public function pull($key, $default = null): mixed
     {
