@@ -10,9 +10,12 @@ use Illuminate\Cache\Events\KeyWritten;
 use Illuminate\Cache\Repository;
 use Illuminate\Contracts\Cache\Store as StoreContract;
 use Illuminate\Support\Facades\Config; // For default compression settings
+use Illuminate\Support\Traits\Macroable;
 
 class CustomCacheRepository extends Repository
 {
+    use Macroable;
+
     /**
      * The underlying cache store instance.
      *
@@ -33,7 +36,7 @@ class CustomCacheRepository extends Repository
     /**
      * Per-call compression settings, populated by macros.
      *
-     * @var ?array{enabled: bool, level: int}
+     * @var ?array{enabled: ?bool, level: ?int}
      */
     public ?array $compressionSettings = null; // Made public for macros to easily access/modify
 
@@ -109,14 +112,13 @@ class CustomCacheRepository extends Repository
             // Pass the resolved config to the callback if it needs it
             $result = $callback($config);
         } finally {
-            CacheCompress::setTemporarySettings(null); // Reset for next independent operation
-            // No longer need to call $this->clearCompressionSettingsForMacro(); here as it's done in getCurrentCompressionConfiguration
+            CacheCompress::setTemporarySettings(null);
         }
 
         return $result;
     }
 
-    protected function getMinutes($duration) // Helper from parent, make it accessible if needed
+    protected function getMinutes($duration): ?int
     {
         if ($duration === null) {
             return null;
@@ -235,7 +237,14 @@ class CustomCacheRepository extends Repository
                 $processedValue = $this->compressor->compress($value, $this->driverName);
             }
 
-            $result = $this->store->add($this->itemKey($key), $processedValue, $this->getSeconds($ttl));
+            // Check if the store supports the add operation
+            if (method_exists($this->store, 'add')) {
+                $result = $this->store->add($this->itemKey($key), $processedValue, $this->getSeconds($ttl));
+            } else {
+                // If add is not supported, use put as a fallback
+                $result = $this->store->put($this->itemKey($key), $processedValue, $this->getSeconds($ttl));
+            }
+
             if ($result) {
                 $this->event(new KeyWritten($key, $processedValue, $this->getMinutes($ttl), []));
             }

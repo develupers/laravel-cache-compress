@@ -56,69 +56,69 @@ class CacheCompressServiceProvider extends PackageServiceProvider
         // This method is called after the package is booted (within the parent boot method).
         // Ideal for registering macros, event listeners, publishing assets etc.
 
-        // Register the compression macro - These will target CustomCacheRepository
-        // Ensure macros correctly check for the CustomCacheRepository instance,
-        // which is returned by CustomCacheManager::store()
-        Cache::macro('compress', function (bool $enabled = true, ?int $level = null) {
-            if ($this instanceof CustomCacheRepository) {
-                $this->setCompressionSetting('enabled', $enabled);
-                // Only set level if it's provided, otherwise setCompressionSetting will use its default logic
-                if ($level !== null) {
-                    $this->setCompressionSetting('level', $level);
-                }
-            } elseif ($this instanceof CacheManager) {
-                // If called on the manager, get the default store and apply settings to it.
-                $defaultStore = $this->store();
-                if ($defaultStore instanceof CustomCacheRepository) {
-                    $defaultStore->setCompressionSetting('enabled', $enabled);
-                    if ($level !== null) {
-                        $defaultStore->setCompressionSetting('level', $level);
-                    }
-                }
-
-                return $defaultStore; // Return the store for chaining
-            }
-
-            return $this; // Return $this for chaining if not handled above
-        });
-
-        Cache::macro('compressionLevel', function (int $level) {
-            if ($this instanceof CustomCacheRepository) {
+        // Register the compression macros on the CustomCacheRepository class
+        CustomCacheRepository::macro('compress', function (bool $enabled = true, ?int $level = null) {
+            $this->setCompressionSetting('enabled', $enabled);
+            // Only set the level if it's provided, otherwise setCompressionSetting will use its default logic
+            if ($level !== null) {
                 $this->setCompressionSetting('level', $level);
-                // setCompressionSetting initializes 'enabled' to its default if not already set.
-            } elseif ($this instanceof CacheManager) {
-                $defaultStore = $this->store();
-                if ($defaultStore instanceof CustomCacheRepository) {
-                    $defaultStore->setCompressionSetting('level', $level);
-                }
-
-                return $defaultStore; // Return the store for chaining
             }
 
             return $this;
         });
 
-        Cache::macro('getCompressionSettings', function () {
-            if ($this instanceof CustomCacheRepository) {
-                return $this->getCompressionSettingsForMacro();
-            } elseif ($this instanceof CacheManager) {
-                $defaultStore = $this->store();
-                if ($defaultStore instanceof CustomCacheRepository) {
-                    return $defaultStore->getCompressionSettingsForMacro();
+        CustomCacheRepository::macro('compressionLevel', function (int $level) {
+            $this->setCompressionSetting('level', $level);
+
+            // setCompressionSetting initializes 'enabled' to its default if not already set.
+            return $this;
+        });
+
+        CustomCacheRepository::macro('getCompressionSettings', function () {
+            return $this->getCompressionSettingsForMacro();
+        });
+
+        CustomCacheRepository::macro('clearCompressionSettings', function () {
+            $this->clearCompressionSettingsForMacro();
+
+            return $this;
+        });
+
+        // Register the same macros on the CustomCacheManager to handle manager-level calls
+        CustomCacheManager::macro('compress', function (bool $enabled = true, ?int $level = null) {
+            $defaultStore = $this->driver();
+            if ($defaultStore instanceof CustomCacheRepository) {
+                $defaultStore->setCompressionSetting('enabled', $enabled);
+                if ($level !== null) {
+                    $defaultStore->setCompressionSetting('level', $level);
                 }
+            }
+
+            return $defaultStore;
+        });
+
+        CustomCacheManager::macro('compressionLevel', function (int $level) {
+            $defaultStore = $this->driver();
+            if ($defaultStore instanceof CustomCacheRepository) {
+                $defaultStore->setCompressionSetting('level', $level);
+            }
+
+            return $defaultStore;
+        });
+
+        CustomCacheManager::macro('getCompressionSettings', function () {
+            $defaultStore = $this->driver();
+            if ($defaultStore instanceof CustomCacheRepository) {
+                return $defaultStore->getCompressionSettingsForMacro();
             }
 
             return null;
         });
 
-        Cache::macro('clearCompressionSettings', function () {
-            if ($this instanceof CustomCacheRepository) {
-                $this->clearCompressionSettingsForMacro();
-            } elseif ($this instanceof CacheManager) {
-                $defaultStore = $this->store();
-                if ($defaultStore instanceof CustomCacheRepository) {
-                    $defaultStore->clearCompressionSettingsForMacro();
-                }
+        CustomCacheManager::macro('clearCompressionSettings', function () {
+            $defaultStore = $this->driver();
+            if ($defaultStore instanceof CustomCacheRepository) {
+                $defaultStore->clearCompressionSettingsForMacro();
             }
 
             return $this;

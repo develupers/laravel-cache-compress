@@ -13,9 +13,12 @@ use Illuminate\Cache\RedisStore;
 use Illuminate\Contracts\Cache\Store as StoreContract;
 use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Support\Str;
+use Illuminate\Support\Traits\Macroable;
 
 class CustomCacheManager extends CacheManager
 {
+    use Macroable;
+
     /**
      * Create a new cache repository with the given implementation.
      *
