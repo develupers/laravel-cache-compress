@@ -5,6 +5,8 @@ namespace Develupers\CacheCompress;
 use Develupers\CacheCompress\Commands\CacheCompressCommand;
 use Develupers\CacheCompress\Store\CustomCacheManager;
 use Develupers\CacheCompress\Store\CustomCacheRepository;
+use Illuminate\Cache\CacheManager;
+use Illuminate\Contracts\Cache\Factory;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Cache;
 use Spatie\LaravelPackageTools\Package;
@@ -39,8 +41,8 @@ class CacheCompressServiceProvider extends PackageServiceProvider
 
         // Alias the main 'cache' service and related abstracts to our custom manager.
         $this->app->alias(CustomCacheManager::class, 'cache');
-        $this->app->alias(CustomCacheManager::class, \Illuminate\Cache\CacheManager::class);
-        $this->app->alias(CustomCacheManager::class, \Illuminate\Contracts\Cache\Factory::class);
+        $this->app->alias(CustomCacheManager::class, CacheManager::class);
+        $this->app->alias(CustomCacheManager::class, Factory::class);
 
         // This ensures that when `cache.store` (or Repository::class) is resolved,
         // it uses our aliased 'cache' manager's default driver.
@@ -61,7 +63,7 @@ class CacheCompressServiceProvider extends PackageServiceProvider
             if ($this instanceof CustomCacheRepository) {
                 $this->setCompressionSetting('enabled', $enabled);
                 $this->setCompressionSetting('level', $level ?? config('cache-compress.compression_level', 6));
-            } elseif ($this instanceof \Illuminate\Cache\CacheManager || $this instanceof CustomCacheManager) {
+            } elseif ($this instanceof CacheManager) {
                 // If called on the manager, get the default store and apply settings to it.
                 $defaultStore = $this->store();
                 if ($defaultStore instanceof CustomCacheRepository) {
@@ -78,16 +80,11 @@ class CacheCompressServiceProvider extends PackageServiceProvider
         Cache::macro('compressionLevel', function (int $level) {
             if ($this instanceof CustomCacheRepository) {
                 $this->setCompressionSetting('level', $level);
-                if (! isset($this->compressionSettings) || ! array_key_exists('enabled', $this->compressionSettings)) {
-                    $this->setCompressionSetting('enabled', config('cache-compress.enabled', true));
-                }
-            } elseif ($this instanceof \Illuminate\Cache\CacheManager || $this instanceof CustomCacheManager) {
+                // setCompressionSetting initializes 'enabled' to its default if not already set.
+            } elseif ($this instanceof CacheManager) {
                 $defaultStore = $this->store();
                 if ($defaultStore instanceof CustomCacheRepository) {
                     $defaultStore->setCompressionSetting('level', $level);
-                    if (! isset($defaultStore->compressionSettings) || ! array_key_exists('enabled', $defaultStore->compressionSettings)) {
-                        $defaultStore->setCompressionSetting('enabled', config('cache-compress.enabled', true));
-                    }
                 }
 
                 return $defaultStore; // Return the store for chaining
@@ -99,7 +96,7 @@ class CacheCompressServiceProvider extends PackageServiceProvider
         Cache::macro('getCompressionSettings', function () {
             if ($this instanceof CustomCacheRepository) {
                 return $this->getCompressionSettingsForMacro();
-            } elseif ($this instanceof \Illuminate\Cache\CacheManager || $this instanceof CustomCacheManager) {
+            } elseif ($this instanceof CacheManager || $this instanceof CustomCacheManager) {
                 $defaultStore = $this->store();
                 if ($defaultStore instanceof CustomCacheRepository) {
                     return $defaultStore->getCompressionSettingsForMacro();
@@ -112,7 +109,7 @@ class CacheCompressServiceProvider extends PackageServiceProvider
         Cache::macro('clearCompressionSettings', function () {
             if ($this instanceof CustomCacheRepository) {
                 $this->clearCompressionSettingsForMacro();
-            } elseif ($this instanceof \Illuminate\Cache\CacheManager || $this instanceof CustomCacheManager) {
+            } elseif ($this instanceof CacheManager) {
                 $defaultStore = $this->store();
                 if ($defaultStore instanceof CustomCacheRepository) {
                     $defaultStore->clearCompressionSettingsForMacro();

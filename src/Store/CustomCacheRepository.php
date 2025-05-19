@@ -53,7 +53,7 @@ class CustomCacheRepository extends Repository
     /**
      * Get the current compression settings for an operation.
      */
-    protected function getCurrentCompressionConfiguration(): array
+    public function getCurrentCompressionConfiguration(): array
     {
         if ($this->compressionSettings !== null) {
             $settings = [
@@ -67,7 +67,9 @@ class CustomCacheRepository extends Repository
             ];
         }
         // After getting settings for current operation, clear them for the next call
-        // This makes the macro settings truly per-call
+        // This makes the macro settings truly per-call for single-item operations.
+        // For multi-item operations (many, putMany), this means settings apply to the first item.
+        // If a different behavior is desired for multi-item ops, this clearing needs to be more nuanced.
         $this->clearCompressionSettingsForMacro();
 
         return $settings;
@@ -98,19 +100,17 @@ class CustomCacheRepository extends Repository
 
     protected function executeWithCompressionConfiguration(Closure $callback, bool $isReadOperation = false)
     {
-        $currentSettings = $this->compressionSettings; // Persist for this operation
-        $config = [
-            'enabled' => $currentSettings['enabled'] ?? Config::get('cache-compress.enabled', true),
-            'level' => $currentSettings['level'] ?? Config::get('cache-compress.compression_level', 6),
-        ];
+        // Get the configuration for this specific operation.
+        // getCurrentCompressionConfiguration also handles clearing the macro settings for this repository instance.
+        $config = $this->getCurrentCompressionConfiguration();
 
         CacheCompress::setTemporarySettings($config);
         try {
-            // Pass the resolved config to the callback if it needs it (e.g., for deciding to serialize only)
+            // Pass the resolved config to the callback if it needs it
             $result = $callback($config);
         } finally {
             CacheCompress::setTemporarySettings(null); // Reset for next independent operation
-            $this->clearCompressionSettingsForMacro(); // Reset macro-specific settings for this repository instance
+            // No longer need to call $this->clearCompressionSettingsForMacro(); here as it's done in getCurrentCompressionConfiguration
         }
 
         return $result;
@@ -124,6 +124,37 @@ class CustomCacheRepository extends Repository
         $seconds = $this->getSeconds($duration);
 
         return $seconds === 0 ? 0 : (int) ceil($seconds / 60);
+    }
+
+    /**
+     * Processes a raw value retrieved from the cache store, handling decompression and unserialization.
+     *
+     * @param  string  $storedValue The raw string value from the cache.
+     * @param  array  $operationConfig The compression configuration for the current operation.
+     * @return mixed The processed (decompressed and/or unserialized) value.
+     */
+    protected function _processRetrievedValue(string $storedValue, array $operationConfig): mixed
+    {
+        $data = null;
+        if (! $operationConfig['enabled']) {
+            try {
+                $data = unserialize($storedValue);
+            } catch (\Throwable $e) {
+                $data = $storedValue; // Return raw if not unserializable
+            }
+        } else {
+            try {
+                $data = $this->compressor->decompress($storedValue, $this->driverName);
+            } catch (\Throwable $e) {
+                // Decompression failed, try unserialize as fallback
+                try {
+                    $data = unserialize($storedValue);
+                } catch (\Throwable $e2) {
+                    $data = $storedValue; // Return raw if all fails
+                }
+            }
+        }
+        return $data;
     }
 
     /**
@@ -143,32 +174,14 @@ class CustomCacheRepository extends Repository
                 return $default instanceof Closure ? $default() : $default;
             }
 
-            // If value is not a string, it's unlikely to be compressed or serialized by us
+            // If value is not a string, it's unlikely to be compressed or serialized by us, return as is.
             if (! is_string($value)) {
                 $this->event(new CacheHit($key, $value, []));
-
                 return $value;
             }
 
-            $data = null;
-            if (! $config['enabled']) {
-                try {
-                    $data = unserialize($value);
-                } catch (\Throwable $e) {
-                    $data = $value; // Return raw if not unserializable
-                }
-            } else {
-                try {
-                    $data = $this->compressor->decompress($value, $this->driverName);
-                } catch (\Throwable $e) {
-                    // Decompression failed, try unserialize as fallback
-                    try {
-                        $data = unserialize($value);
-                    } catch (\Throwable $e2) {
-                        $data = $value; // Return raw if all fails
-                    }
-                }
-            }
+            $data = $this->_processRetrievedValue($value, $config);
+
             $this->event(new CacheHit($key, $data, []));
 
             return $data;
@@ -185,8 +198,6 @@ class CustomCacheRepository extends Repository
     public function put($key, $value, $ttl = null): bool
     {
         return $this->executeWithCompressionConfiguration(function ($config) use ($key, $value, $ttl) {
-            dd($config);
-
             $serializedValue = serialize($value);
             if (! $config['enabled']) {
                 $processedValue = $serializedValue;
@@ -312,31 +323,15 @@ class CustomCacheRepository extends Repository
                     continue;
                 }
 
+                // If value is not a string, it's unlikely to be compressed or serialized by us, return as is.
                 if (! is_string($value)) {
                     $this->event(new CacheHit($key, $value, []));
                     $results[$key] = $value;
-
                     continue;
                 }
 
-                $data = null;
-                if (! $config['enabled']) {
-                    try {
-                        $data = unserialize($value);
-                    } catch (\Throwable $e) {
-                        $data = $value;
-                    }
-                } else {
-                    try {
-                        $data = $this->compressor->decompress($value, $this->driverName);
-                    } catch (\Throwable $e) {
-                        try {
-                            $data = unserialize($value);
-                        } catch (\Throwable $e2) {
-                            $data = $value;
-                        }
-                    }
-                }
+                $data = $this->_processRetrievedValue($value, $config);
+
                 $this->event(new CacheHit($key, $data, []));
                 $results[$key] = $data;
             }
