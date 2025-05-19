@@ -69,9 +69,30 @@ return [
 
 ## Usage
 
-### Basic Usage
+### Using with Laravel's Cache Facade
 
-The package provides a `CacheCompress` facade that works just like Laravel's `Cache` facade, but with compression:
+The package adds a `compress()` method to Laravel's standard `Cache` facade:
+
+```php
+use Illuminate\Support\Facades\Cache;
+
+// Store with compression
+Cache::compress()->put('key', $largeObject, 60); // 60 minutes
+
+// Retrieve compressed data
+$value = Cache::compress()->get('key');
+
+// With a specific store
+Cache::store('redis')->compress()->put('key', $value, 60);
+$value = Cache::store('redis')->compress()->get('key');
+
+// Disable compression for a specific operation
+Cache::compress(false)->put('key', $value, 60);
+```
+
+### Using the Dedicated CacheCompress Facade
+
+Alternatively, you can use the dedicated `CacheCompress` facade:
 
 ```php
 use Develupers\CacheCompress\Facades\CacheCompress;
@@ -151,18 +172,9 @@ composer test
 
 Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.
 
-## Contributing
-
-Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
-
-## Security Vulnerabilities
-
-Please review [our security policy](../../security/policy) on how to report security vulnerabilities.
-
 ## Credits
 
 - [Omar Robinson](https://github.com/develupers)
-- [All Contributors](../../contributors)
 
 ## License
 
