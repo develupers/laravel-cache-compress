@@ -1,20 +1,26 @@
 # Laravel Cache Compress
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/develupers/laravel-cache-compress.svg?style=flat-square)](https://packagist.org/packages/develupers/laravel-cache-compress)
+[![GitHub Tests Action Status](https://img.shields.io/github/workflow/status/develupers/laravel-cache-compress/run-tests?label=tests)](https://github.com/develupers/laravel-cache-compress/actions?query=workflow%3Arun-tests+branch%3Amain)
+[![GitHub Code Style Action Status](https://img.shields.io/github/workflow/status/develupers/laravel-cache-compress/Fix%20PHP%20code%20style%20issues?label=code%20style)](https://github.com/develupers/laravel-cache-compress/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
 [![Total Downloads](https://img.shields.io/packagist/dt/develupers/laravel-cache-compress.svg?style=flat-square)](https://packagist.org/packages/develupers/laravel-cache-compress)
 
-This package provides transparent, on-the-fly compression and decompression for Laravel's cache, reducing storage size
-for drivers like Redis, Memcached, File, and MongoDB.
+A Laravel package that adds compression to your Laravel cache, reducing storage requirements for large cache values.
 
 ## Features
 
-- Automatic compression before caching and decompression after retrieval.
-- Supports `gzdeflate` for compression.
-- Configurable compression level.
-- Handles Base64 encoding for MongoDB to ensure UTF-8 compatibility.
-- Per-call control over compression enablement and level using cache macros.
-- Compatible with Laravel Cache Tags.
-- Supports Laravel 11+ and PHP 8.2+.
+- Automatically compresses cache values before storage
+- Automatically decompresses values when retrieved
+- Compatible with all Laravel cache drivers
+- Special handling for MongoDB to ensure UTF-8 compatibility
+- Control compression via environment variables or per-call settings
+- Compatible with Laravel's Cache Tags
+
+## Requirements
+
+- PHP 8.2+
+- Laravel 10|11+
+- PHP zlib extension (for compression)
 
 ## Installation
 
@@ -24,15 +30,13 @@ You can install the package via composer:
 composer require develupers/laravel-cache-compress
 ```
 
-The package will automatically register itself.
-
 You can publish the config file with:
 
 ```bash
-php artisan vendor:publish --provider="Develupers\CacheCompress\CacheCompressServiceProvider" --tag="laravel-cache-compress-config"
+php artisan vendor:publish --tag="cache-compress-config"
 ```
 
-This is the contents of the published config file (`config/cache-compress.php`):
+This is the contents of the published config file:
 
 ```php
 return [
@@ -41,7 +45,8 @@ return [
     | Enable Cache Compression
     |--------------------------------------------------------------------------
     |
-    | This option controls whether cache compression is enabled globally.
+    | This option controls whether cache compression is enabled.
+    | You can disable it by setting this to false.
     |
     */
     'enabled' => env('CACHE_COMPRESS_ENABLED', true),
@@ -51,8 +56,11 @@ return [
     | Compression Level
     |--------------------------------------------------------------------------
     |
-    | This option controls the compression level used by gzdeflate (0-9).
-    | 0 = no compression, 1 = fastest, 9 = maximum compression.
+    | This option controls the compression level used by gzdeflate.
+    | The value must be between 0 and 9, where:
+    | 0 = no compression
+    | 1 = minimal compression (fastest)
+    | 9 = maximum compression (slowest)
     |
     */
     'compression_level' => env('CACHE_COMPRESS_LEVEL', 6),
@@ -61,105 +69,98 @@ return [
 
 ## Usage
 
-Once installed, the package works transparently with Laravel's standard `Cache` facade or `cache()` helper. Data will be
-automatically compressed before being stored and decompressed upon retrieval.
+### Using with Laravel's Cache Facade
 
-### Standard Cache Operations
+The package adds a `compress()` method to Laravel's standard `Cache` facade:
 
 ```php
 use Illuminate\Support\Facades\Cache;
 
-// Value will be compressed before storing
-Cache::put('my_key', 'This is a long string that will be compressed.', 600); // 10 Minutes
-Cache::store('redis')->put('another_key', ['data' => 'complex'], now()->addHour());
+// Store with compression
+Cache::compress()->put('key', $largeObject, 60); // 60 minutes
 
-// Value will be decompressed after retrieval
-$value = Cache::get('my_key');
-$anotherValue = Cache::store('redis')->get('another_key');
+// Retrieve compressed data
+$value = Cache::compress()->get('key');
 
-// Remember functions also work seamlessly
-$complexData = Cache::remember('complex_data_key', 3600, function () {
-    return ['user' => 1, 'posts' => ['a', 'b', 'c']];
-});
+// With a specific store
+Cache::store('redis')->compress()->put('key', $value, 60);
+$value = Cache::store('redis')->compress()->get('key');
+
+// Disable compression for a specific operation
+Cache::compress(false)->put('key', $value, 60);
 ```
 
-### Per-Call Compression Control
+### Using the Dedicated CacheCompress Facade
 
-You can override the global compression settings for individual cache operations using the provided macros:
+Alternatively, you can use the dedicated `CacheCompress` facade:
 
 ```php
-// Disable compression for this specific 'put' operation
-Cache::compress(false)->put('uncompressed_key', 'This will not be compressed.', 600);
+use Develupers\CacheCompress\Facades\CacheCompress;
 
-// Enable compression and set a specific level for this operation
-Cache::compress(true)->compressionLevel(9)->put('max_compressed_key', 'Highly compressed data.', 600);
+// Store a value in the cache (will be compressed)
+CacheCompress::put('key', $largeObject, 60); // 60 minutes
 
-// Just set a specific compression level (uses default for enabled status)
-Cache::compressionLevel(1)->put('fast_compressed_key', 'Fast compression.', 600);
-
-// These macros also work when retrieving data, affecting how the system attempts to decompress.
-// (Though typically decompression settings are symmetric to compression settings at the time of storage)
-$value = Cache::compress(false)->get('uncompressed_key');
+// Retrieve and automatically decompress the value
+$value = CacheCompress::get('key');
 ```
 
-**Note on Macro Usage with Multi-Key Operations:**
-When using macros like `compress()` or `compressionLevel()` with multi-key operations such as `Cache::many()` or
-`Cache::putMany()`, the per-call settings currently apply to the processing of the *first key* within that operation.
-Subsequent keys in the same `many()` or `putMany()` call will revert to the default compression settings. For consistent
-per-call settings across all items in a multi-key operation, apply settings individually if needed or rely on global
-configuration.
+### Specifying a Store
 
-## Troubleshooting
+You can specify which cache store to use:
 
-### MongoDB Driver Not Supported Error
+```php
+// Use the Redis store
+$value = CacheCompress::store('redis')->get('key');
 
-If you are using MongoDB as a cache driver and encounter an error like `Driver [mongodb] is not supported`, it usually
-indicates an issue with the order in which Laravel's service providers are loaded and booted. Specifically, the
-`MongoDB\Laravel\MongoDBServiceProvider` needs to register its cache driver extension *before* this package (or other
-packages like `spatie/laravel-responsecache`) attempt to resolve the MongoDB cache store.
+// Store with the file driver
+CacheCompress::store('file')->put('key', $value, 60);
+```
 
-To resolve this, you may need to manually define the order of service providers in your application:
+### Disable Compression for Specific Operations
 
-1. **Adjust `config/app.php`:**
-   Open your `config/app.php` file and find the `providers` array. Ensure that `MongoDB\Laravel\MongoDBServiceProvider`
-   is listed *before* `Develupers\CacheCompress\CacheCompressServiceProvider`:
+You can disable compression for specific operations:
 
-   ```php
-   'providers' => [
-       // ... other framework service providers
+```php
+// Disable compression for this specific operation
+$value = CacheCompress::store('redis')->compress(false)->get('key');
 
-       MongoDB\Laravel\MongoDBServiceProvider::class,
-       Develupers\CacheCompress\CacheCompressServiceProvider::class,
+// Re-enable compression for subsequent operations
+$value = CacheCompress::store('redis')->compress(true)->get('key');
+```
 
-       // ... other application and package service providers
-   ],
-   ```
+### All Standard Cache Methods Supported
 
-2. **Update `composer.json` to prevent auto-discovery (if necessary):**
-   If these packages are also being auto-discovered by Laravel, you should instruct Laravel not to discover them to
-   avoid conflicts with manual registration. Add the following to your `composer.json` file under the `extra.laravel`
-   section:
+All standard Laravel cache methods are supported:
 
-   ```json
-   {
-   //...
-   "extra": {
-       "laravel": {
-           "dont-discover": [
-               "develupers/laravel-cache-compress",
-               "mongodb/laravel-mongodb"
-           ]
-       }
-   }
-   //...
-   }
-   
-   ```
-   After modifying `composer.json`, run `composer dump-autoload` to update the autoloader.
+```php
+// Remember pattern
+$value = CacheCompress::remember('key', 60, function () {
+    return expensive_operation();
+});
 
-This manual ordering ensures that the MongoDB cache driver is available when the `laravel-cache-compress` package
-initializes, and when other services (like `spatie/laravel-responsecache` if you use `RESPONSE_CACHE_DRIVER=mongodb`)
-attempt to use the MongoDB cache store.
+// Forever
+CacheCompress::forever('key', $value);
+
+// Multiple items
+$values = CacheCompress::many(['key1', 'key2']);
+
+// Check if exists
+if (CacheCompress::has('key')) {
+    // ...
+}
+
+// Delete
+CacheCompress::forget('key');
+```
+
+## Environment Variables
+
+You can control compression through environment variables:
+
+```
+CACHE_COMPRESS_ENABLED=true
+CACHE_COMPRESS_LEVEL=6
+```
 
 ## Testing
 
@@ -173,7 +174,7 @@ Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed re
 
 ## Credits
 
-- [Omar Robinson](https://github.com/your-github-username)
+- [Omar Robinson](https://github.com/develupers)
 
 ## License
 

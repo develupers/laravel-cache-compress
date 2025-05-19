@@ -3,10 +3,9 @@
 namespace Develupers\CacheCompress;
 
 use Develupers\CacheCompress\Commands\CacheCompressCommand;
-use Develupers\CacheCompress\Store\CustomCacheManager;
-use Develupers\CacheCompress\Store\CustomCacheRepository;
-use Illuminate\Cache\CacheManager;
-use Illuminate\Contracts\Cache\Factory;
+use Develupers\CacheCompress\Compressors\DefaultStoreCompressor;
+use Develupers\CacheCompress\Compressors\MongoDBStoreCompressor;
+use Illuminate\Cache\Repository;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Cache;
 use Spatie\LaravelPackageTools\Package;
@@ -29,99 +28,57 @@ class CacheCompressServiceProvider extends PackageServiceProvider
 
     public function packageRegistered(): void
     {
-        // This method is called after the package is registered (within the parent register method).
-        // Ideal for service container bindings that should happen early.
-
-        $this->app->singleton(CacheCompress::class);
-
-        // Register our CustomCacheManager as the concrete implementation for cache services
-        $this->app->singleton(CustomCacheManager::class, function (Application $app) {
-            return new CustomCacheManager($app);
+        // Register the compressors
+        $this->app->singleton(DefaultStoreCompressor::class, function () {
+            return new DefaultStoreCompressor;
         });
 
-        // Alias the main 'cache' service and related abstracts to our custom manager.
-        $this->app->alias(CustomCacheManager::class, 'cache');
-        $this->app->alias(CustomCacheManager::class, CacheManager::class);
-        $this->app->alias(CustomCacheManager::class, Factory::class);
+        $this->app->singleton(MongoDBStoreCompressor::class, function () {
+            return new MongoDBStoreCompressor;
+        });
 
-        // This ensures that when `cache.store` (or Repository::class) is resolved,
-        // it uses our aliased 'cache' manager's default driver.
-        $this->app->singleton('cache.store', function (Application $app) {
-            return $app['cache']->driver();
+        // Register the cache compress manager
+        $this->app->singleton('cache.compress', function (Application $app) {
+            return new CacheCompressManager($app);
         });
     }
 
     public function packageBooted(): void
     {
-        // This method is called after the package is booted (within the parent boot method).
-        // Ideal for registering macros, event listeners, publishing assets etc.
+        // Add compatibility macro to Laravel's Cache facade
+        if (! Cache::hasMacro('compress')) {
+            Cache::macro('compress', function (bool $enabled = true) {
+                // Get the app instance
+                $app = app();
 
-        // Register the compression macro - These will target CustomCacheRepository
-        // Ensure macros correctly check for the CustomCacheRepository instance,
-        // which is returned by CustomCacheManager::store()
-        Cache::macro('compress', function (bool $enabled = true, ?int $level = null) {
-            if ($this instanceof CustomCacheRepository) {
-                $this->setCompressionSetting('enabled', $enabled);
-                // Only set level if it's provided, otherwise setCompressionSetting will use its default logic
-                if ($level !== null) {
-                    $this->setCompressionSetting('level', $level);
-                }
-            } elseif ($this instanceof CacheManager) {
-                // If called on the manager, get the default store and apply settings to it.
-                $defaultStore = $this->store();
-                if ($defaultStore instanceof CustomCacheRepository) {
-                    $defaultStore->setCompressionSetting('enabled', $enabled);
-                    if ($level !== null) {
-                        $defaultStore->setCompressionSetting('level', $level);
-                    }
-                }
+                // Get our compressed cache manager
+                $cacheCompressManager = $app->make('cache.compress');
 
-                return $defaultStore; // Return the store for chaining
-            }
+                // Get a compressed repository for the current store
+                // The store name is determined automatically from the current configuration
+                $repository = $cacheCompressManager->store();
 
-            return $this; // Return $this for chaining if not handled above
-        });
+                // Set compression enabled/disabled as requested
+                return $repository->compress($enabled);
+            });
+        }
 
-        Cache::macro('compressionLevel', function (int $level) {
-            if ($this instanceof CustomCacheRepository) {
-                $this->setCompressionSetting('level', $level);
-                // setCompressionSetting initializes 'enabled' to its default if not already set.
-            } elseif ($this instanceof CacheManager) {
-                $defaultStore = $this->store();
-                if ($defaultStore instanceof CustomCacheRepository) {
-                    $defaultStore->setCompressionSetting('level', $level);
-                }
+        // Add the compress macro to Repository instances (for Cache::store('file')->compress())
+        if (! Repository::hasMacro('compress')) {
+            Repository::macro('compress', function (bool $enabled = true) {
+                // Get the app instance
+                $app = app();
 
-                return $defaultStore; // Return the store for chaining
-            }
+                // Get our compressed cache manager
+                $cacheCompressManager = $app->make('cache.compress');
 
-            return $this;
-        });
+                // Get a repository for the default store - the specific store name is passed
+                // through the CacheManager's store() method before getting here
+                $repository = $cacheCompressManager->store();
 
-        Cache::macro('getCompressionSettings', function () {
-            if ($this instanceof CustomCacheRepository) {
-                return $this->getCompressionSettingsForMacro();
-            } elseif ($this instanceof CacheManager) {
-                $defaultStore = $this->store();
-                if ($defaultStore instanceof CustomCacheRepository) {
-                    return $defaultStore->getCompressionSettingsForMacro();
-                }
-            }
-
-            return null;
-        });
-
-        Cache::macro('clearCompressionSettings', function () {
-            if ($this instanceof CustomCacheRepository) {
-                $this->clearCompressionSettingsForMacro();
-            } elseif ($this instanceof CacheManager) {
-                $defaultStore = $this->store();
-                if ($defaultStore instanceof CustomCacheRepository) {
-                    $defaultStore->clearCompressionSettingsForMacro();
-                }
-            }
-
-            return $this;
-        });
+                // Set compression enabled/disabled as requested
+                return $repository->compress($enabled);
+            });
+        }
     }
 }
