@@ -13,6 +13,7 @@ use Illuminate\Cache\RedisStore;
 use Illuminate\Contracts\Cache\Store as StoreContract;
 use Illuminate\Support\Str;
 use MongoDB\Laravel\Cache\MongoStore;
+use Develupers\CacheCompress\Store\MacroableMongoStore;
 
 class CustomCacheManager extends CacheManager
 {
@@ -63,8 +64,8 @@ class CustomCacheManager extends CacheManager
             return 'dynamodb';
         }
 
-        // Check for MongoDB store only if the package is installed
-        if ($this->hasMongoDbSupport() && $this->isMongoDbStore($store)) {
+        // Check for MongoDB store
+        if (class_exists('MongoDB\Laravel\Cache\MongoStore') && $store instanceof \MongoDB\Laravel\Cache\MongoStore) {
             return 'mongodb';
         }
 
@@ -84,11 +85,8 @@ class CustomCacheManager extends CacheManager
      */
     protected function createMongodbDriver(array $config)
     {
-        if (! $this->hasMongoDbSupport()) {
-            throw new \RuntimeException(
-                'MongoDB cache driver requires mongodb/laravel-mongodb package. ' .
-                'Please install it using: `composer require mongodb/laravel-mongodb`'
-            );
+        if (! class_exists('MongoDB\Laravel\Cache\MongoStore')) {
+            throw new \RuntimeException('MongoDB cache driver requires mongodb/laravel-mongodb package.');
         }
 
         try {
@@ -106,12 +104,14 @@ class CustomCacheManager extends CacheManager
                 ? $this->app['db']->connection($config['lock_connection'])
                 : $mongoConnection;
 
-            return new MongoStore(
+            $store = new MacroableMongoStore(
                 $mongoConnection,
                 $config['table'] ?? 'cache',
                 $config['prefix'] ?? '',
                 $lockConnection
             );
+
+            return $this->repository($store);
         } catch (\Exception $e) {
             // Log the error for debugging
             if ($this->app->bound('log')) {
@@ -127,26 +127,5 @@ class CustomCacheManager extends CacheManager
                 $e
             );
         }
-    }
-
-    /**
-     * Check if MongoDB support is available.
-     *
-     * @return bool
-     */
-    protected function hasMongoDbSupport(): bool
-    {
-        return class_exists('MongoDB\Laravel\Cache\MongoStore');
-    }
-
-    /**
-     * Check if the given store is a MongoDB store.
-     *
-     * @param  \Illuminate\Contracts\Cache\Store  $store
-     * @return bool
-     */
-    protected function isMongoDbStore(StoreContract $store): bool
-    {
-        return $this->hasMongoDbSupport() && $store instanceof \MongoDB\Laravel\Cache\MongoStore;
     }
 }

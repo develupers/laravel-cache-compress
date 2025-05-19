@@ -27,7 +27,7 @@ class CacheCompress implements CacheCompressorInterface
     /**
      * Get the current compression settings.
      */
-    protected function getSettings(): array
+    public function getSettings(): array
     {
         if (static::$temporarySettings !== null) {
             return static::$temporarySettings;
@@ -52,17 +52,10 @@ class CacheCompress implements CacheCompressorInterface
             return serialize($value);
         }
 
-        $compressed = gzdeflate(
+        return gzdeflate(
             serialize($value),
             $settings['level']
         );
-
-        // If MongoDB, encode to base64 to ensure UTF-8 compatibility
-        if ($driver === 'mongodb') {
-            return base64_encode($compressed);
-        }
-
-        return $compressed;
     }
 
     /**
@@ -78,10 +71,6 @@ class CacheCompress implements CacheCompressorInterface
             return unserialize($value);
         }
 
-        // If MongoDB, decode from base64
-        $safeObject = $driver === 'mongodb' ?
-            base64_decode($value) : $value;
-
-        return unserialize(gzinflate($safeObject));
+        return unserialize(gzinflate($value));
     }
 }

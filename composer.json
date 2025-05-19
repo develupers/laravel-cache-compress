@@ -24,10 +24,8 @@
         "spatie/laravel-package-tools": "^1.16",
         "illuminate/contracts": "^10.0||^11.0||^12.0"
     },
-    "suggest": {
-        "mongodb/laravel-mongodb": "Required for MongoDB cache driver support"
-    },
     "require-dev": {
+        "ext-mongodb": "*",
         "laravel/pint": "^1.14",
         "nunomaduro/collision": "^8.1.1||^7.10.0",
         "larastan/larastan": "^2.9||^3.0",
@@ -37,7 +35,11 @@
         "pestphp/pest-plugin-laravel": "^3.0",
         "phpstan/extension-installer": "^1.3||^2.0",
         "phpstan/phpstan-deprecation-rules": "^1.1||^2.0",
-        "phpstan/phpstan-phpunit": "^1.3||^2.0"
+        "phpstan/phpstan-phpunit": "^1.3||^2.0",
+        "mongodb/laravel-mongodb": "^5.0"
+    },
+    "suggest": {
+        "mongodb/laravel-mongodb": "Required for MongoDB cache driver support. Also requires PHP's mongodb extension to be installed."
     },
     "autoload": {
         "psr-4": {

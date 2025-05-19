@@ -62,13 +62,18 @@ class CacheCompressServiceProvider extends PackageServiceProvider
         Cache::macro('compress', function (bool $enabled = true, ?int $level = null) {
             if ($this instanceof CustomCacheRepository) {
                 $this->setCompressionSetting('enabled', $enabled);
-                $this->setCompressionSetting('level', $level ?? config('cache-compress.compression_level', 6));
-            } elseif ($this instanceof CacheManager) {
+                // Only set level if it's provided, otherwise setCompressionSetting will use its default logic
+                if ($level !== null) {
+                    $this->setCompressionSetting('level', $level);
+                }
+            } elseif ($this instanceof CacheManager || $this instanceof CustomCacheManager) {
                 // If called on the manager, get the default store and apply settings to it.
                 $defaultStore = $this->store();
                 if ($defaultStore instanceof CustomCacheRepository) {
                     $defaultStore->setCompressionSetting('enabled', $enabled);
-                    $defaultStore->setCompressionSetting('level', $level ?? config('cache-compress.compression_level', 6));
+                    if ($level !== null) {
+                        $defaultStore->setCompressionSetting('level', $level);
+                    }
                 }
 
                 return $defaultStore; // Return the store for chaining
@@ -81,7 +86,7 @@ class CacheCompressServiceProvider extends PackageServiceProvider
             if ($this instanceof CustomCacheRepository) {
                 $this->setCompressionSetting('level', $level);
                 // setCompressionSetting initializes 'enabled' to its default if not already set.
-            } elseif ($this instanceof CacheManager) {
+            } elseif ($this instanceof CacheManager || $this instanceof CustomCacheManager) {
                 $defaultStore = $this->store();
                 if ($defaultStore instanceof CustomCacheRepository) {
                     $defaultStore->setCompressionSetting('level', $level);
@@ -109,7 +114,7 @@ class CacheCompressServiceProvider extends PackageServiceProvider
         Cache::macro('clearCompressionSettings', function () {
             if ($this instanceof CustomCacheRepository) {
                 $this->clearCompressionSettingsForMacro();
-            } elseif ($this instanceof CacheManager) {
+            } elseif ($this instanceof CacheManager || $this instanceof CustomCacheManager) {
                 $defaultStore = $this->store();
                 if ($defaultStore instanceof CustomCacheRepository) {
                     $defaultStore->clearCompressionSettingsForMacro();
