@@ -107,7 +107,6 @@ class CompressedCacheRepository implements RepositoryContract
      *
      * @param  string  $key
      * @param  mixed  $value
-     * @return int|bool
      */
     public function increment($key, $value = 1): bool|int
     {
@@ -119,7 +118,6 @@ class CompressedCacheRepository implements RepositoryContract
      *
      * @param  string  $key
      * @param  mixed  $value
-     * @return int|bool
      */
     public function decrement($key, $value = 1): bool|int
     {
@@ -239,10 +237,8 @@ class CompressedCacheRepository implements RepositoryContract
 
     /**
      * Store multiple items in the cache.
-     *
-     * @param DateInterval|DateTimeInterface|int|null $ttl
      */
-    public function putMany(array $values, DateInterval|DateTimeInterface|int $ttl = null): bool
+    public function putMany(array $values, DateInterval|DateTimeInterface|int|null $ttl = null): bool
     {
         if ($this->compressionEnabled) {
             foreach ($values as $key => $value) {
@@ -269,8 +265,6 @@ class CompressedCacheRepository implements RepositoryContract
 
     /**
      * Get the cache store implementation.
-     *
-     * @return Store
      */
     public function getStore(): Store
     {
@@ -279,9 +273,6 @@ class CompressedCacheRepository implements RepositoryContract
 
     /**
      * Determine if an item exists in the cache.
-     *
-     * @param string $key
-     * @return bool
      */
     public function has(string $key): bool
     {
@@ -291,10 +282,7 @@ class CompressedCacheRepository implements RepositoryContract
     /**
      * Store an item in the cache.
      *
-     * @param string $key
-     * @param mixed $value
-     * @param null $ttl
-     * @return bool
+     * @param  null  $ttl
      */
     public function set(string $key, mixed $value, $ttl = null): bool
     {
@@ -303,9 +291,6 @@ class CompressedCacheRepository implements RepositoryContract
 
     /**
      * Remove an item from the cache.
-     *
-     * @param string $key
-     * @return bool
      */
     public function delete(string $key): bool
     {
@@ -324,10 +309,6 @@ class CompressedCacheRepository implements RepositoryContract
      * Retrieve multiple items from the cache by key.
      *
      * Items not found in the cache will have a null value.
-     *
-     * @param iterable $keys
-     * @param mixed|null $default
-     * @return iterable
      */
     public function getMultiple(iterable $keys, mixed $default = null): iterable
     {
@@ -337,9 +318,7 @@ class CompressedCacheRepository implements RepositoryContract
     /**
      * Store multiple items in the cache for a given number of seconds.
      *
-     * @param iterable $values
-     * @param null $ttl
-     * @return bool
+     * @param  null  $ttl
      */
     public function setMultiple(iterable $values, $ttl = null): bool
     {
@@ -348,9 +327,6 @@ class CompressedCacheRepository implements RepositoryContract
 
     /**
      * Remove multiple items from the cache.
-     *
-     * @param iterable $keys
-     * @return bool
      */
     public function deleteMultiple(iterable $keys): bool
     {
@@ -368,9 +344,7 @@ class CompressedCacheRepository implements RepositoryContract
     /**
      * Get an item from the cache or execute the given Closure and store the result.
      *
-     * @param string $key
-     * @param Closure $callback
-     * @return mixed
+     * @param  string  $key
      */
     public function sear($key, Closure $callback): mixed
     {
