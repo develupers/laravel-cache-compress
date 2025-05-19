@@ -5,7 +5,7 @@ namespace Develupers\CacheCompress;
 use Develupers\CacheCompress\Contracts\CacheCompressorInterface;
 use Illuminate\Support\Facades\Config;
 
-class CompressCache implements CacheCompressorInterface
+class CacheCompress implements CacheCompressorInterface
 {
     /**
      * The temporary compression settings.
@@ -27,7 +27,7 @@ class CompressCache implements CacheCompressorInterface
     /**
      * Get the current compression settings.
      */
-    protected function getSettings(): array
+    public function getSettings(): array
     {
         if (static::$temporarySettings !== null) {
             return static::$temporarySettings;
@@ -52,17 +52,10 @@ class CompressCache implements CacheCompressorInterface
             return serialize($value);
         }
 
-        $compressed = gzdeflate(
+        return gzdeflate(
             serialize($value),
             $settings['level']
         );
-
-        // If MongoDB, encode to base64 to ensure UTF-8 compatibility
-        if ($driver === 'mongodb') {
-            return base64_encode($compressed);
-        }
-
-        return $compressed;
     }
 
     /**
@@ -78,10 +71,6 @@ class CompressCache implements CacheCompressorInterface
             return unserialize($value);
         }
 
-        // If MongoDB, decode from base64
-        $safeObject = $driver === 'mongodb' ?
-            base64_decode($value) : $value;
-
-        return unserialize(gzinflate($safeObject));
+        return unserialize(gzinflate($value));
     }
 }

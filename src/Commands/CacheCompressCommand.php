@@ -6,7 +6,7 @@ use Illuminate\Console\Command;
 
 class CacheCompressCommand extends Command
 {
-    public $signature = 'skeleton';
+    public $signature = 'laravel-cache-compress';
 
     public $description = 'My command';
 
