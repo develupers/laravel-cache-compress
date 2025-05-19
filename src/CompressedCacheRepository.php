@@ -3,9 +3,12 @@
 namespace Develupers\CacheCompress;
 
 use Closure;
+use DateInterval;
+use DateTimeInterface;
 use Develupers\CacheCompress\Contracts\StoreCompressor;
 use Illuminate\Cache\Repository;
 use Illuminate\Contracts\Cache\Repository as RepositoryContract;
+use Illuminate\Contracts\Cache\Store;
 use Illuminate\Support\Facades\Config;
 
 class CompressedCacheRepository implements RepositoryContract
@@ -72,7 +75,7 @@ class CompressedCacheRepository implements RepositoryContract
      *
      * @param  string  $key
      * @param  mixed  $value
-     * @param  \DateTimeInterface|\DateInterval|int|null  $ttl
+     * @param  DateTimeInterface|DateInterval|int|null  $ttl
      */
     public function put($key, $value, $ttl = null): bool
     {
@@ -88,7 +91,7 @@ class CompressedCacheRepository implements RepositoryContract
      *
      * @param  string  $key
      * @param  mixed  $value
-     * @param  \DateTimeInterface|\DateInterval|int|null  $ttl
+     * @param  DateTimeInterface|DateInterval|int|null  $ttl
      */
     public function add($key, $value, $ttl = null): bool
     {
@@ -106,7 +109,7 @@ class CompressedCacheRepository implements RepositoryContract
      * @param  mixed  $value
      * @return int|bool
      */
-    public function increment($key, $value = 1)
+    public function increment($key, $value = 1): bool|int
     {
         return $this->repository->increment($key, $value);
     }
@@ -118,7 +121,7 @@ class CompressedCacheRepository implements RepositoryContract
      * @param  mixed  $value
      * @return int|bool
      */
-    public function decrement($key, $value = 1)
+    public function decrement($key, $value = 1): bool|int
     {
         return $this->repository->decrement($key, $value);
     }
@@ -139,10 +142,10 @@ class CompressedCacheRepository implements RepositoryContract
     }
 
     /**
-     * Get an item from the cache, or execute the given Closure and store the result.
+     * Get an item from the cache or execute the given Closure and store the result.
      *
      * @param  string  $key
-     * @param  \DateTimeInterface|\DateInterval|int|null  $ttl
+     * @param  DateTimeInterface|DateInterval|int|null  $ttl
      */
     public function remember($key, $ttl, Closure $callback): mixed
     {
@@ -160,7 +163,7 @@ class CompressedCacheRepository implements RepositoryContract
     }
 
     /**
-     * Get an item from the cache, or execute the given Closure and store the result forever.
+     * Get an item from the cache or execute the given Closure and store the result forever.
      *
      * @param  string  $key
      */
@@ -237,9 +240,9 @@ class CompressedCacheRepository implements RepositoryContract
     /**
      * Store multiple items in the cache.
      *
-     * @param  \DateTimeInterface|\DateInterval|int|null  $ttl
+     * @param DateInterval|DateTimeInterface|int|null $ttl
      */
-    public function putMany(array $values, $ttl = null): bool
+    public function putMany(array $values, DateInterval|DateTimeInterface|int $ttl = null): bool
     {
         if ($this->compressionEnabled) {
             foreach ($values as $key => $value) {
@@ -267,30 +270,20 @@ class CompressedCacheRepository implements RepositoryContract
     /**
      * Get the cache store implementation.
      *
-     * @return \Illuminate\Contracts\Cache\Store
+     * @return Store
      */
-    public function getStore()
+    public function getStore(): Store
     {
         return $this->repository->getStore();
     }
 
     /**
-     * Fire an event for this cache operation.
-     *
-     * @param  string  $event
-     * @param  array  $payload
-     */
-    protected function event($event): void
-    {
-        $this->repository->event($event);
-    }
-
-    /**
      * Determine if an item exists in the cache.
      *
-     * @param  string  $key
+     * @param string $key
+     * @return bool
      */
-    public function has($key): bool
+    public function has(string $key): bool
     {
         return $this->repository->has($key);
     }
@@ -298,11 +291,12 @@ class CompressedCacheRepository implements RepositoryContract
     /**
      * Store an item in the cache.
      *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @param  \DateTimeInterface|\DateInterval|int|null  $ttl
+     * @param string $key
+     * @param mixed $value
+     * @param null $ttl
+     * @return bool
      */
-    public function set($key, $value, $ttl = null): bool
+    public function set(string $key, mixed $value, $ttl = null): bool
     {
         return $this->put($key, $value, $ttl);
     }
@@ -310,9 +304,10 @@ class CompressedCacheRepository implements RepositoryContract
     /**
      * Remove an item from the cache.
      *
-     * @param  string  $key
+     * @param string $key
+     * @return bool
      */
-    public function delete($key): bool
+    public function delete(string $key): bool
     {
         return $this->forget($key);
     }
@@ -330,10 +325,11 @@ class CompressedCacheRepository implements RepositoryContract
      *
      * Items not found in the cache will have a null value.
      *
-     * @param  iterable  $keys
-     * @param  mixed  $default
+     * @param iterable $keys
+     * @param mixed|null $default
+     * @return iterable
      */
-    public function getMultiple($keys, $default = null): iterable
+    public function getMultiple(iterable $keys, mixed $default = null): iterable
     {
         return $this->many(is_array($keys) ? $keys : iterator_to_array($keys));
     }
@@ -341,10 +337,11 @@ class CompressedCacheRepository implements RepositoryContract
     /**
      * Store multiple items in the cache for a given number of seconds.
      *
-     * @param  iterable  $values
-     * @param  \DateTimeInterface|\DateInterval|int|null  $ttl
+     * @param iterable $values
+     * @param null $ttl
+     * @return bool
      */
-    public function setMultiple($values, $ttl = null): bool
+    public function setMultiple(iterable $values, $ttl = null): bool
     {
         return $this->putMany(is_array($values) ? $values : iterator_to_array($values), $ttl);
     }
@@ -352,9 +349,10 @@ class CompressedCacheRepository implements RepositoryContract
     /**
      * Remove multiple items from the cache.
      *
-     * @param  iterable  $keys
+     * @param iterable $keys
+     * @return bool
      */
-    public function deleteMultiple($keys): bool
+    public function deleteMultiple(iterable $keys): bool
     {
         $result = true;
 
@@ -368,13 +366,13 @@ class CompressedCacheRepository implements RepositoryContract
     }
 
     /**
-     * Get an item from the cache, or execute the given Closure and store the result.
+     * Get an item from the cache or execute the given Closure and store the result.
      *
-     * @param  string  $key
-     * @param  \DateTimeInterface|\DateInterval|int|null  $ttl
-     * @param  \Closure  $callback
+     * @param string $key
+     * @param Closure $callback
+     * @return mixed
      */
-    public function sear($key, $callback): mixed
+    public function sear($key, Closure $callback): mixed
     {
         return $this->rememberForever($key, $callback);
     }
