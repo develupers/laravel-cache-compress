@@ -18,8 +18,6 @@ class CustomCacheManager extends CacheManager
 {
     /**
      * Create a new cache repository with the given implementation.
-     *
-     * @return CustomCacheRepository
      */
     public function repository(StoreContract $store, array $config = []): CustomCacheRepository
     {
@@ -79,30 +77,29 @@ class CustomCacheManager extends CacheManager
     /**
      * Create an instance of the MongoDB cache driver.
      *
-     * @param  array  $config
      * @return \Illuminate\Contracts\Cache\Store
      */
     protected function createMongodbDriver(array $config)
     {
         if (! $this->hasMongoDbSupport()) {
             throw new \RuntimeException(
-                'MongoDB cache driver requires mongodb/laravel-mongodb package. ' .
+                'MongoDB cache driver requires mongodb/laravel-mongodb package. '.
                 'Please install it using: `composer require mongodb/laravel-mongodb`'
             );
         }
 
         try {
             $connection = $config['connection'] ?? 'mongodb';
-            
+
             // Get the MongoDB connection instance instead of the database
             $mongoConnection = $this->app['db']->connection($connection);
-            
+
             if (! $mongoConnection) {
-                throw new \RuntimeException("Could not establish MongoDB connection for cache driver.");
+                throw new \RuntimeException('Could not establish MongoDB connection for cache driver.');
             }
 
             // Get the lock connection if specified, otherwise use the same connection
-            $lockConnection = isset($config['lock_connection']) 
+            $lockConnection = isset($config['lock_connection'])
                 ? $this->app['db']->connection($config['lock_connection'])
                 : $mongoConnection;
 
@@ -115,14 +112,14 @@ class CustomCacheManager extends CacheManager
         } catch (\Exception $e) {
             // Log the error for debugging
             if ($this->app->bound('log')) {
-                $this->app['log']->error('MongoDB cache driver error: ' . $e->getMessage(), [
+                $this->app['log']->error('MongoDB cache driver error: '.$e->getMessage(), [
                     'exception' => $e,
-                    'config' => $config
+                    'config' => $config,
                 ]);
             }
-            
+
             throw new \RuntimeException(
-                'Failed to create MongoDB cache driver: ' . $e->getMessage(),
+                'Failed to create MongoDB cache driver: '.$e->getMessage(),
                 $e->getCode(),
                 $e
             );
@@ -131,8 +128,6 @@ class CustomCacheManager extends CacheManager
 
     /**
      * Check if MongoDB support is available.
-     *
-     * @return bool
      */
     protected function hasMongoDbSupport(): bool
     {
@@ -141,9 +136,6 @@ class CustomCacheManager extends CacheManager
 
     /**
      * Check if the given store is a MongoDB store.
-     *
-     * @param  \Illuminate\Contracts\Cache\Store  $store
-     * @return bool
      */
     protected function isMongoDbStore(StoreContract $store): bool
     {

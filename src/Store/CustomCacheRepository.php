@@ -129,8 +129,8 @@ class CustomCacheRepository extends Repository
     /**
      * Processes a raw value retrieved from the cache store, handling decompression and unserialization.
      *
-     * @param  string  $storedValue The raw string value from the cache.
-     * @param  array  $operationConfig The compression configuration for the current operation.
+     * @param  string  $storedValue  The raw string value from the cache.
+     * @param  array  $operationConfig  The compression configuration for the current operation.
      * @return mixed The processed (decompressed and/or unserialized) value.
      */
     protected function _processRetrievedValue(string $storedValue, array $operationConfig): mixed
@@ -154,6 +154,7 @@ class CustomCacheRepository extends Repository
                 }
             }
         }
+
         return $data;
     }
 
@@ -177,6 +178,7 @@ class CustomCacheRepository extends Repository
             // If value is not a string, it's unlikely to be compressed or serialized by us, return as is.
             if (! is_string($value)) {
                 $this->event(new CacheHit($key, $value, []));
+
                 return $value;
             }
 
@@ -327,6 +329,7 @@ class CustomCacheRepository extends Repository
                 if (! is_string($value)) {
                     $this->event(new CacheHit($key, $value, []));
                     $results[$key] = $value;
+
                     continue;
                 }
 

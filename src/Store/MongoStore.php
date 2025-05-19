@@ -19,10 +19,6 @@ class MongoStore extends Store implements StoreContract
     /**
      * Create a new MongoDB store.
      *
-     * @param  \MongoDB\Laravel\Connection  $connection
-     * @param  string  $table
-     * @param  string  $prefix
-     * @param  \MongoDB\Laravel\Connection|null  $lockConnection
      * @return void
      */
     public function __construct(Connection $connection, string $table = 'cache', string $prefix = '', ?Connection $lockConnection = null)
@@ -57,7 +53,6 @@ class MongoStore extends Store implements StoreContract
     /**
      * Store multiple items in the cache for a given number of seconds.
      *
-     * @param  array  $values
      * @param  int  $seconds
      * @return bool
      */
@@ -69,7 +64,6 @@ class MongoStore extends Store implements StoreContract
     /**
      * Retrieve multiple items from the cache by key.
      *
-     * @param  array  $keys
      * @return array
      */
     public function many(array $keys)
@@ -143,4 +137,4 @@ class MongoStore extends Store implements StoreContract
     {
         return $this->store->getPrefix();
     }
-} 
+}
