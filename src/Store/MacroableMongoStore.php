@@ -2,10 +2,10 @@
 
 namespace Develupers\CacheCompress\Store;
 
+use Develupers\CacheCompress\CacheCompress;
+use Illuminate\Contracts\Cache\Store;
 use Illuminate\Support\Traits\Macroable;
 use MongoDB\Laravel\Cache\MongoStore;
-use Illuminate\Contracts\Cache\Store;
-use Develupers\CacheCompress\CacheCompress;
 
 class MacroableMongoStore implements Store
 {
@@ -41,7 +41,7 @@ class MacroableMongoStore implements Store
     public function get($key)
     {
         $value = $this->store->get($key);
-        
+
         if ($value !== null && is_string($value) && $this->shouldEncode($value)) {
             return $this->decodeValue($value);
         }
@@ -52,7 +52,6 @@ class MacroableMongoStore implements Store
     /**
      * Retrieve multiple items from the cache by key.
      *
-     * @param  array  $keys
      * @return array
      */
     public function many(array $keys)
@@ -63,6 +62,7 @@ class MacroableMongoStore implements Store
             if ($value !== null && is_string($value) && $this->shouldEncode($value)) {
                 return $this->decodeValue($value);
             }
+
             return $value;
         }, $values);
     }
@@ -87,7 +87,6 @@ class MacroableMongoStore implements Store
     /**
      * Store multiple items in the cache for a given number of seconds.
      *
-     * @param  array  $values
      * @param  int  $seconds
      * @return bool
      */
@@ -188,21 +187,16 @@ class MacroableMongoStore implements Store
 
     /**
      * Check if a value should be encoded for MongoDB storage.
-     *
-     * @param  string  $value
-     * @return bool
      */
     protected function shouldEncode(string $value): bool
     {
         $settings = app(CacheCompress::class)->getSettings();
-        return $settings['enabled'] && !mb_check_encoding($value, 'UTF-8');
+
+        return $settings['enabled'] && ! mb_check_encoding($value, 'UTF-8');
     }
 
     /**
      * Encode a value for MongoDB storage.
-     *
-     * @param  string  $value
-     * @return string
      */
     protected function encodeValue(string $value): string
     {
@@ -211,12 +205,9 @@ class MacroableMongoStore implements Store
 
     /**
      * Decode a value from MongoDB storage.
-     *
-     * @param  string  $value
-     * @return string
      */
     protected function decodeValue(string $value): string
     {
         return base64_decode($value);
     }
-} 
+}

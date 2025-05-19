@@ -66,7 +66,7 @@ class CacheCompressServiceProvider extends PackageServiceProvider
                 if ($level !== null) {
                     $this->setCompressionSetting('level', $level);
                 }
-            } elseif ($this instanceof CacheManager || $this instanceof CustomCacheManager) {
+            } elseif ($this instanceof CacheManager) {
                 // If called on the manager, get the default store and apply settings to it.
                 $defaultStore = $this->store();
                 if ($defaultStore instanceof CustomCacheRepository) {
@@ -86,7 +86,7 @@ class CacheCompressServiceProvider extends PackageServiceProvider
             if ($this instanceof CustomCacheRepository) {
                 $this->setCompressionSetting('level', $level);
                 // setCompressionSetting initializes 'enabled' to its default if not already set.
-            } elseif ($this instanceof CacheManager || $this instanceof CustomCacheManager) {
+            } elseif ($this instanceof CacheManager) {
                 $defaultStore = $this->store();
                 if ($defaultStore instanceof CustomCacheRepository) {
                     $defaultStore->setCompressionSetting('level', $level);
@@ -101,7 +101,7 @@ class CacheCompressServiceProvider extends PackageServiceProvider
         Cache::macro('getCompressionSettings', function () {
             if ($this instanceof CustomCacheRepository) {
                 return $this->getCompressionSettingsForMacro();
-            } elseif ($this instanceof CacheManager || $this instanceof CustomCacheManager) {
+            } elseif ($this instanceof CacheManager) {
                 $defaultStore = $this->store();
                 if ($defaultStore instanceof CustomCacheRepository) {
                     return $defaultStore->getCompressionSettingsForMacro();
@@ -114,7 +114,7 @@ class CacheCompressServiceProvider extends PackageServiceProvider
         Cache::macro('clearCompressionSettings', function () {
             if ($this instanceof CustomCacheRepository) {
                 $this->clearCompressionSettingsForMacro();
-            } elseif ($this instanceof CacheManager || $this instanceof CustomCacheManager) {
+            } elseif ($this instanceof CacheManager) {
                 $defaultStore = $this->store();
                 if ($defaultStore instanceof CustomCacheRepository) {
                     $defaultStore->clearCompressionSettingsForMacro();
