@@ -2,75 +2,23 @@
 
 namespace Develupers\CacheCompress;
 
-use Develupers\CacheCompress\Contracts\CacheCompressorInterface;
 use Illuminate\Support\Facades\Config;
 
-class CacheCompress implements CacheCompressorInterface
+class CacheCompress
 {
     /**
-     * The temporary compression settings.
-     *
-     * @var array|null
+     * Get the enabled status from configuration.
      */
-    protected static $temporarySettings = null;
-
-    /**
-     * Set temporary compression settings.
-     *
-     * @return void
-     */
-    public static function setTemporarySettings(?array $settings)
+    public function isEnabled(): bool
     {
-        static::$temporarySettings = $settings;
+        return Config::get('cache-compress.enabled', true);
     }
 
     /**
-     * Get the current compression settings.
+     * Get the compression level from configuration.
      */
-    public function getSettings(): array
+    public function getCompressionLevel(): int
     {
-        if (static::$temporarySettings !== null) {
-            return static::$temporarySettings;
-        }
-
-        return [
-            'enabled' => Config::get('cache-compress.enabled', true),
-            'level' => Config::get('cache-compress.compression_level', 6),
-        ];
-    }
-
-    /**
-     * Compress the given value for cache storage
-     *
-     * @param  mixed  $value
-     */
-    public function compress($value, string $driver): string
-    {
-        $settings = $this->getSettings();
-
-        if (! $settings['enabled']) {
-            return serialize($value);
-        }
-
-        return gzdeflate(
-            serialize($value),
-            $settings['level']
-        );
-    }
-
-    /**
-     * Decompress the given value from cache storage
-     *
-     * @return mixed
-     */
-    public function decompress(string $value, string $driver)
-    {
-        $settings = $this->getSettings();
-
-        if (! $settings['enabled']) {
-            return unserialize($value);
-        }
-
-        return unserialize(gzinflate($value));
+        return Config::get('cache-compress.compression_level', 6);
     }
 }
