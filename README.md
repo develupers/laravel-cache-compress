@@ -71,7 +71,7 @@ return [
 
 ### Using with Laravel's Cache Facade
 
-The package adds a `compress()` method to Laravel's standard `Cache` facade:
+The package adds a `compress()`, `decompress()`, `withoutCompress()` and `withoutDecompress()` method to Laravel's standard `Cache` facade:
 
 ```php
 use Illuminate\Support\Facades\Cache;
@@ -81,14 +81,16 @@ Cache::compress()->put('key', $largeObject, 60); // 60 minutes
 
 // Retrieve compressed data
 $value = Cache::compress()->get('key');
+// or
+$value = Cache::decompress()->get('key');
 
 // With a specific store
 Cache::store('redis')->compress()->put('key', $value, 60);
-$value = Cache::store('redis')->compress()->get('key');
+$value = Cache::store('redis')->decompress()->get('key');
 
-// Disable compression for a specific operation
-Cache::compress(false)->put('key', $value, 60);
 ```
+
+**Note:** `decompress()` is just a shortcut for `compress()` and `withoutDecompress()` is just a shortcut for `withoutCompress()`.
 
 ### Using the Dedicated CacheCompress Facade
 
@@ -116,16 +118,35 @@ $value = CacheCompress::store('redis')->get('key');
 CacheCompress::store('file')->put('key', $value, 60);
 ```
 
-### Disable Compression for Specific Operations
+### Completely Replace Laravel's Cache Facade (Optional)
 
-You can disable compression for specific operations:
+If you want to use compression for all cache operations by default, you can replace Laravel's Cache facade with our CacheCompress facade by adding the following to your `config/app.php`:
 
 ```php
-// Disable compression for this specific operation
-$value = CacheCompress::store('redis')->compress(false)->get('key');
+'aliases' => Facade::defaultAliases()->merge([
+    //...
+    'Cache' => Develupers\CacheCompress\Facades\CacheCompress::class,
+    //...
+]),
+```
 
-// Re-enable compression for subsequent operations
-$value = CacheCompress::store('redis')->compress(true)->get('key');
+With this change, all `Cache::` calls in your application will automatically use compression without any additional code changes.
+
+```php
+Cache::put('key', $value, 60); // This will be compressed
+$value = Cache::get('key'); // This will be decompressed
+```
+
+Note: Automatic compress only applies when `CACHE_COMPRESS_ENABLED` is set to `true`.
+
+To disable compression for a specific operation at runtime, set `compress(false)`. For example:
+
+```php
+Cache::compress(false)->put('key', $value, 60);
+Cache::compress(false)->get('key');
+// or 
+Cache::withoutCompress()->put('key', $value, 60);
+Cache::withoutDecompress()->get('key');
 ```
 
 ### All Standard Cache Methods Supported
@@ -133,7 +154,7 @@ $value = CacheCompress::store('redis')->compress(true)->get('key');
 All standard Laravel cache methods are supported:
 
 ```php
-// Remember pattern
+// Remember a pattern
 $value = CacheCompress::remember('key', 60, function () {
     return expensive_operation();
 });
@@ -171,10 +192,6 @@ composer test
 ## Changelog
 
 Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.
-
-## Credits
-
-- [Omar Robinson](https://github.com/develupers)
 
 ## License
 

@@ -49,6 +49,37 @@ class CompressedCacheRepository implements RepositoryContract
     }
 
     /**
+     * Same as compress, but for decompression. Purely for elegant
+     * language and function chaining on Cache facade
+     */
+    public function decompress(bool $enabled = true): self
+    {
+        $this->compress($enabled);
+
+        return $this;
+    }
+
+    /**
+     * Enable or disable compression for this repository instance.
+     */
+    public function withoutCompress(): self
+    {
+        $this->compressionEnabled = false;
+
+        return $this;
+    }
+
+    /**
+     * Enable or disable compression for this repository instance.
+     */
+    public function withoutDecompress(): self
+    {
+        $this->compressionEnabled = false;
+
+        return $this;
+    }
+
+    /**
      * Get an item from the cache.
      *
      * @param  mixed  $key
