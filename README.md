@@ -71,7 +71,7 @@ return [
 
 ### Using with Laravel's Cache Facade
 
-The package adds a `compress()` method to Laravel's standard `Cache` facade:
+The package adds a `compress()`, `decompress()`, `withoutCompress()` and `withoutDecompress()` method to Laravel's standard `Cache` facade:
 
 ```php
 use Illuminate\Support\Facades\Cache;
@@ -81,12 +81,16 @@ Cache::compress()->put('key', $largeObject, 60); // 60 minutes
 
 // Retrieve compressed data
 $value = Cache::compress()->get('key');
+// or
+$value = Cache::decompress()->get('key');
 
 // With a specific store
 Cache::store('redis')->compress()->put('key', $value, 60);
-$value = Cache::store('redis')->compress()->get('key');
+$value = Cache::store('redis')->decompress()->get('key');
 
 ```
+
+**Note:** `decompress()` is just a shortcut for `compress()` and `withoutDecompress()` is just a shortcut for `withoutCompress()`.
 
 ### Using the Dedicated CacheCompress Facade
 
@@ -112,18 +116,6 @@ $value = CacheCompress::store('redis')->get('key');
 
 // Store with the file driver
 CacheCompress::store('file')->put('key', $value, 60);
-```
-
-### Disable Compression for Specific Operations
-
-You can disable compression for specific operations:
-
-```php
-// Disable compression for this specific operation
-$value = CacheCompress::store('redis')->compress(false)->get('key');
-
-// Re-enable compression for subsequent operations
-$value = CacheCompress::store('redis')->compress(true)->get('key');
 ```
 
 ### Completely Replace Laravel's Cache Facade (Optional)
@@ -152,6 +144,9 @@ To disable compression for a specific operation at runtime, set `compress(false)
 ```php
 Cache::compress(false)->put('key', $value, 60);
 Cache::compress(false)->get('key');
+// or 
+Cache::withoutCompress()->put('key', $value, 60);
+Cache::withoutDecompress()->get('key');
 ```
 
 ### All Standard Cache Methods Supported
