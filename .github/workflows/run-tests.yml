@@ -35,7 +35,7 @@ jobs:
             testbench: 8.*
             pest: 2.*
 
-    name: P${{ matrix.php }} - L${{ matrix.laravel }} - ${{ matrix.stability }} - ${{ matrix.os }}
+    name: PHP${{ matrix.php }} - Laravel${{ matrix.laravel }} - Pest${{matrix.pest}} - ${{ matrix.stability }} - ${{ matrix.os }}
 
     steps:
       - name: Checkout code
