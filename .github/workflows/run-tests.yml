@@ -33,7 +33,7 @@ jobs:
             pest: 3.*
           - laravel: 10.*
             testbench: 8.36.*
-            pest: 2.*
+            pest: 2.35.*
 
     name: PHP${{ matrix.php }} - Laravel${{ matrix.laravel }} - Pest${{matrix.pest}} - ${{ matrix.stability }} - ${{ matrix.os }}
 
